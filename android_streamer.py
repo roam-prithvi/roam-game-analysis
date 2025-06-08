@@ -17,6 +17,7 @@ VIDEO_OUTPUT_FILE = "screen_recording.mp4"  # The file where video will be saved
 # --- Global variable to hold our running processes ---
 processes = []
 event_log_file = None  # Global to be accessible by signal_handler
+coordinate_translator = None  # Global translator function
 
 
 def find_touchscreen_device():
@@ -99,17 +100,93 @@ def get_screen_size():
     return None, None
 
 
+def get_input_device_ranges(device_path):
+    """
+    Gets the coordinate ranges for ABS_MT_POSITION_X and ABS_MT_POSITION_Y
+    from the input device to enable coordinate translation.
+
+    Returns:
+        tuple: (x_min, x_max, y_min, y_max) or (None, None, None, None) if not found
+    """
+    print(f"📐 Getting coordinate ranges for {device_path}...")
+    try:
+        command = f"{ADB_PATH} shell getevent -lp {device_path}"
+        result = subprocess.run(
+            shlex.split(command), capture_output=True, text=True, check=True
+        )
+
+        x_min = x_max = y_min = y_max = None
+
+        for line in result.stdout.split("\n"):
+            # Look for ABS_MT_POSITION_X line with min/max values
+            # Format: "    ABS_MT_POSITION_X    : value 0, min 0, max 3119, fuzz 0, flat 0, resolution 0"
+            if "ABS_MT_POSITION_X" in line:
+                match = re.search(r"min\s+(\d+),\s*max\s+(\d+)", line)
+                if match:
+                    x_min, x_max = int(match.group(1)), int(match.group(2))
+
+            elif "ABS_MT_POSITION_Y" in line:
+                match = re.search(r"min\s+(\d+),\s*max\s+(\d+)", line)
+                if match:
+                    y_min, y_max = int(match.group(1)), int(match.group(2))
+
+        if all(v is not None for v in [x_min, x_max, y_min, y_max]):
+            print(f"✅ Coordinate ranges - X: {x_min}-{x_max}, Y: {y_min}-{y_max}")
+            return x_min, x_max, y_min, y_max
+        else:
+            print("⚠️ Could not find coordinate ranges in device info")
+            return None, None, None, None
+
+    except Exception as e:
+        print(f"❌ Error getting coordinate ranges: {e}")
+        return None, None, None, None
+
+
+def create_coordinate_translator(
+    x_min, x_max, y_min, y_max, screen_width, screen_height
+):
+    """
+    Creates a function that translates raw touch coordinates to pixel coordinates.
+
+    Args:
+        x_min, x_max: Raw coordinate range for X axis
+        y_min, y_max: Raw coordinate range for Y axis
+        screen_width, screen_height: Screen resolution in pixels
+
+    Returns:
+        function: A translator function that takes (raw_x, raw_y) and returns (pixel_x, pixel_y)
+    """
+    if any(
+        v is None for v in [x_min, x_max, y_min, y_max, screen_width, screen_height]
+    ):
+        print("⚠️ Missing coordinate info, translation will not be available")
+        return None
+
+    def translate(raw_x, raw_y):
+        # Linear interpolation from raw range to pixel range
+        pixel_x = int((raw_x - x_min) * screen_width / (x_max - x_min))
+        pixel_y = int((raw_y - y_min) * screen_height / (y_max - y_min))
+        return pixel_x, pixel_y
+
+    print(
+        f"✅ Coordinate translator created: {x_max-x_min+1}x{y_max-y_min+1} -> {screen_width}x{screen_height}"
+    )
+    return translate
+
+
 def signal_handler(sig, frame):
     """Handles Ctrl+C to gracefully shut down all subprocesses."""
     print("\n🛑 Ctrl+C detected! Shutting down streams...")
+    # Wait for a moment for processes to terminate
+    time.sleep(5)
     for p in processes:
         try:
             p.terminate()  # Send termination signal
         except ProcessLookupError:
             pass  # Process already finished
 
-    # Wait for a moment for processes to terminate
-    time.sleep(0.5)
+    time.sleep(2)
+
     for p in processes:
         if p.poll() is None:  # If process is still running
             p.kill()  # Force kill it
@@ -125,7 +202,7 @@ def signal_handler(sig, frame):
 
 def main():
     """Main function to set up and run the concurrent streams."""
-    global event_log_file
+    global event_log_file, coordinate_translator
     # Set up the Ctrl+C handler
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -133,7 +210,13 @@ def main():
     touch_device = find_touchscreen_device()
     screen_width, screen_height = get_screen_size()
 
-    # 2. Start event stream but wait for first touch to start video
+    # 2. Get coordinate ranges for translation
+    x_min, x_max, y_min, y_max = get_input_device_ranges(touch_device)
+    coordinate_translator = create_coordinate_translator(
+        x_min, x_max, y_min, y_max, screen_width, screen_height
+    )
+
+    # 3. Start event stream but wait for first touch to start video
     event_command = shlex.split(f"{ADB_PATH} shell getevent -lt {touch_device}")
     event_process = subprocess.Popen(
         event_command,
@@ -159,13 +242,13 @@ def main():
         if screen_width and screen_height:
             video_command = (
                 f"{ADB_PATH} shell screenrecord --size {screen_width}x{screen_height} "
-                f"--output-format=h264 - | ffmpeg -f h264 -i - -c copy {VIDEO_OUTPUT_FILE}"
+                f"--output-format=h264 - | ffmpeg -y -f h264 -i - -c copy {VIDEO_OUTPUT_FILE}"
             )
             print(f"🎥 Recording at {screen_width}x{screen_height} resolution")
         else:
             video_command = (
                 f"{ADB_PATH} shell screenrecord --output-format=h264 - "
-                f"| ffmpeg -f h264 -i - -c copy {VIDEO_OUTPUT_FILE}"
+                f"| ffmpeg -y -f h264 -i - -c copy {VIDEO_OUTPUT_FILE}"
             )
             print("🎥 Recording at default resolution")
 
@@ -177,19 +260,23 @@ def main():
         )
         processes.append(video_process)
         print(f"🔴 REC: Video is being recorded to '{VIDEO_OUTPUT_FILE}'")
-        print(f"🔴 REC: Touch events are being streamed to '{EVENT_LOG_FILE}'")
+        print(
+            f"🔴 REC: Touch events are being recorded to '{EVENT_LOG_FILE}' (with pixel coordinates)"
+        )
 
         event_log_file = open(EVENT_LOG_FILE, "w")
 
-        # Process the first line
-        match = re.search(r"\[\s*(\d+\.\d+)\s*\]", line)
-        if match:
-            first_timestamp = float(match.group(1))
-            new_ts_part = f"[{0.0:13.6f}]"
-            adjusted_line = line.replace(match.group(0), new_ts_part)
-            event_log_file.write(adjusted_line)
-        else:
-            event_log_file.write(line)
+        # Process the first line with coordinate translation
+        processed_line = process_event_line(line, None)
+        if processed_line:
+            match = re.search(r"\[\s*(\d+\.\d+)\s*\]", processed_line)
+            if match:
+                first_timestamp = float(match.group(1))
+                new_ts_part = f"[{0.0:13.6f}]"
+                adjusted_line = processed_line.replace(match.group(0), new_ts_part)
+                event_log_file.write(adjusted_line)
+            else:
+                event_log_file.write(processed_line)
         event_log_file.flush()
         break  # Exit loop after handling the first event
 
@@ -212,7 +299,7 @@ def main():
     print(">>> Analysis session is running. Press Ctrl+C to stop. <<<")
     print("=========================================================")
 
-    # 3. Wait until the user interrupts
+    # 4. Wait until the user interrupts
     while True:
         if video_process.poll() is not None:
             print("ℹ️ Video recording process ended.")
@@ -232,15 +319,10 @@ def main():
                 if not line.strip():
                     continue
 
-                match = re.search(r"\[\s*(\d+\.\d+)\s*\]", line)
-                if match:
-                    current_timestamp = float(match.group(1))
-                    adjusted_timestamp = current_timestamp - first_timestamp
-                    new_ts_part = f"[{adjusted_timestamp:13.6f}]"
-                    adjusted_line = line.replace(match.group(0), new_ts_part)
-                    event_log_file.write(adjusted_line)
-                else:
-                    event_log_file.write(line)
+                # Process the line with coordinate translation
+                processed_line = process_event_line(line, first_timestamp)
+                if processed_line:
+                    event_log_file.write(processed_line)
 
             except BlockingIOError:
                 break  # No more data available at the moment
@@ -250,6 +332,91 @@ def main():
 
         event_log_file.flush()
         time.sleep(0.01)  # Prevent busy-waiting
+
+
+def process_event_line(line, first_timestamp):
+    """
+    Process a single event line, converting coordinates to pixels and adjusting timestamp.
+
+    Args:
+        line: Raw event line from getevent
+        first_timestamp: First timestamp for adjustment (None for first event)
+
+    Returns:
+        Processed line string or None if line should be skipped
+    """
+    global coordinate_translator
+
+    if not line.strip():
+        return None
+
+    # Parse the line to extract timestamp and event info
+    match = re.match(r"\[\s*(\d+\.\d+)\s*\]\s+(\S+)\s+(\S+)\s+(.+)", line)
+    if not match:
+        return line  # Return original line if parsing fails
+
+    timestamp_str, ev_type, event_code, value_str = match.groups()
+    timestamp = float(timestamp_str)
+
+    # Adjust timestamp if we have a first timestamp
+    if first_timestamp is not None:
+        adjusted_timestamp = timestamp - first_timestamp
+        new_ts_part = f"[{adjusted_timestamp:13.6f}]"
+    else:
+        new_ts_part = f"[{0.0:13.6f}]"
+
+    # Handle coordinate translation for touch position and size events
+    if (
+        event_code
+        in [
+            "ABS_MT_POSITION_X",
+            "ABS_MT_POSITION_Y",
+            "ABS_MT_TOUCH_MAJOR",
+            "ABS_MT_TOUCH_MINOR",
+        ]
+        and coordinate_translator
+    ):
+        # Convert hex value to decimal
+        value_str = value_str.strip()
+        try:
+            if value_str.startswith("0x"):
+                raw_value = int(value_str, 16)
+            elif value_str.startswith("0") and len(value_str) > 1:
+                raw_value = int(value_str, 16)
+            else:
+                raw_value = int(value_str)
+        except ValueError:
+            # If conversion fails, keep original
+            return f"{new_ts_part} {ev_type:<12} {event_code:<20} {value_str}\n"
+
+        # For coordinate and touch size events, convert to pixels
+        if event_code == "ABS_MT_POSITION_X":
+            # Convert X coordinate (assuming Y=0 for single coordinate conversion)
+            if coordinate_translator:
+                pixel_x, _ = coordinate_translator(raw_value, 0)
+                return f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_x:>12}\n"
+        elif event_code == "ABS_MT_POSITION_Y":
+            # Convert Y coordinate (assuming X=0 for single coordinate conversion)
+            if coordinate_translator:
+                _, pixel_y = coordinate_translator(0, raw_value)
+                return f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_y:>12}\n"
+        elif event_code == "ABS_MT_TOUCH_MAJOR":
+            # Convert major axis size - use X axis scaling for consistency
+            if coordinate_translator:
+                pixel_major, _ = coordinate_translator(raw_value, 0)
+                return (
+                    f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_major:>12}\n"
+                )
+        elif event_code == "ABS_MT_TOUCH_MINOR":
+            # Convert minor axis size - use Y axis scaling for consistency
+            if coordinate_translator:
+                _, pixel_minor = coordinate_translator(0, raw_value)
+                return (
+                    f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_minor:>12}\n"
+                )
+
+    # For non-coordinate events, just adjust timestamp and format
+    return f"{new_ts_part} {ev_type:<12} {event_code:<20} {value_str}\n"
 
 
 if __name__ == "__main__":
