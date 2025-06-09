@@ -16,11 +16,6 @@ def get_find_assets_prompt() -> str:
     return _load_str("find_assets")
 
 
-def get_analyze_assets_prompt() -> str:
-    """Get the prompt for analyzing assets in game screenshots."""
-    return _load_str("analyze_assets")
-
-
 def get_analyze_action_prompt(assets: list, ui_elements: list) -> str:
     """Get the prompt for analyzing player actions in game screenshots.
 

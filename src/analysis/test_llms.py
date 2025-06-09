@@ -70,7 +70,7 @@ def _call_gemini(prompt: str) -> str:
 
     # Configure the client (idempotent)
     genai.configure(api_key=GEMINI_API_KEY)  # type: ignore[arg-type]
-
+    # should be 150 req/min according to https://ai.google.dev/gemini-api/docs/rate-limits#tier-1
     model = genai.GenerativeModel("gemini-2.5-pro-preview-06-05")  # type: ignore[attr-defined]
     response = model.generate_content(prompt)  # type: ignore[attr-defined]
     return (response.text or "").strip()

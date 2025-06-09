@@ -13,10 +13,13 @@ Texture = Literal["flat-color", "hand-painted", "photographic", "procedural"]
 Font = Literal["sans-serif", "serif", "monospace", "handwritten", "cartoon"]
 
 
+# used for the "find assets" prompt. called it SceneAnalysis so the model understands better.
 class SceneAnalysis(BaseModel):
     class Asset(BaseModel):
         name: str
         description: str  # = Field(..., max_length=120)
+        primary_color: str | None = None
+        secondary_color: str | None = None
         style: Style | None = None
         shader: Shader | None = None
         texture: Texture | None = None
@@ -24,6 +27,8 @@ class SceneAnalysis(BaseModel):
     class UIElement(BaseModel):
         name: str
         description: str
+        primary_color: str | None = None
+        secondary_color: str | None = None
         style: Style | None = None
         shader: Shader | None = None
         texture: Texture | None = None
@@ -37,6 +42,7 @@ class SceneAnalysis(BaseModel):
     background: Background
 
 
+# used for the "analyze action" prompt
 class ActionAnalysis(BaseModel):
     class Asset(BaseModel):
         name: str
