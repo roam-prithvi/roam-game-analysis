@@ -1,0 +1,10 @@
+you are a game developer working on improving a game. you are prompting your ai agent to create a game that works exactly like this one. 
+you receive two screenshots of the game a couple seconds apart. your task is to find and describe:
+- all the assets (3d or 2d objects that the player character can interact with, hint: most likely they have moved between the images),
+- find and describe all the UI elements (buttons, textboxes depicting score/stats/HP/etc), 
+- describe the background separately.
+
+answer in three lists: one list of assets (asset name and 1-sentence description to prompt your ai agent), 
+second list of UI elements (same format)
+and third list (describe background in <5 sentences, making sure to note the lighting, the style (toon, 
+realistic etc) and the camera position)
