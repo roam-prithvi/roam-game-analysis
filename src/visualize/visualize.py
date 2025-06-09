@@ -24,7 +24,7 @@ from src.util import list_sessions, sanitize_path_component
 from tqdm.auto import tqdm
 
 # Duration (in seconds) for which a touch trail remains visible.
-TRAIL_SECS: int = 2
+TRAIL_SECS: int = 1
 # --------------------------------------------- #
 
 
@@ -266,12 +266,13 @@ def _precompute_touch_data_vfr(
 
         if fi in buckets:  # new events this frame?
             for ev in buckets[fi]:
-                if ev["state"] == "up":
-                    trails.pop(ev["id"], None)
-                else:
-                    trails.setdefault(ev["id"], []).append(
-                        (ev["time"], (ev["x"], ev["y"]))
-                    )
+                # Record the point for both 'move' and 'up' events so the
+                # trail can linger even after the finger is lifted.  The
+                # standard age-based pruning below will remove it once it is
+                # older than TRAIL_SECS.
+                trails.setdefault(ev["id"], []).append((ev["time"], (ev["x"], ev["y"])))
+                # No "pop" on 'up' – we simply stop receiving new points for
+                # this id and let the time window trim it away.
 
         # Trim old trail points
         for ev_id in list(trails):
