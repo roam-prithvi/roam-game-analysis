@@ -207,6 +207,8 @@ def signal_handler(sig, frame):
     if event_log_file and not event_log_file.closed:
         event_log_file.close()
         print("✅ Event log file closed.")
+        # 🔧 Post-process the log to fix split lines & convert leftovers
+        cleanup_log()
 
     # Close video error log if open
     if video_log_file and not video_log_file.closed:
@@ -270,6 +272,202 @@ def monitor_ffmpeg_stderr(stderr_pipe, log_handle):
         log_handle.flush()
 
     stderr_pipe.close()
+
+
+def process_event_line(line):
+    """
+    Process a single event line, converting coordinates to pixels and adjusting timestamp.
+
+    Args:
+        line: Raw event line from getevent
+
+    Returns:
+        Processed line string or None if line should be skipped
+    """
+    global coordinate_translator, first_tap_time, first_video_frame_time, video_frame_detected
+
+    if not line.strip():
+        return None
+
+    # Parse the line to extract timestamp and event info
+    match = re.match(r"\[\s*(\d+\.\d+)\s*\]\s+(\S+)\s+(\S+)\s+(.+)", line)
+    if not match:
+        return line  # Return original line if parsing fails
+
+    android_timestamp_str, ev_type, event_code, value_str = match.groups()
+
+    # Calculate video-relative timestamp
+    current_time = time.time()
+    if video_frame_detected and first_video_frame_time is not None:
+        # Use video frame time as reference (time 0)
+        video_timestamp = current_time - first_video_frame_time + EVENT_FUDGE
+    else:
+        # Fallback: use first tap time as temporary reference
+        video_timestamp = current_time - first_tap_time if first_tap_time else 0.0
+
+    new_ts_part = f"[{video_timestamp:13.6f}]"
+
+    # Handle coordinate translation for touch position and size events
+    if (
+        event_code
+        in [
+            "ABS_MT_POSITION_X",
+            "ABS_MT_POSITION_Y",
+            "ABS_MT_TOUCH_MAJOR",
+            "ABS_MT_TOUCH_MINOR",
+        ]
+        and coordinate_translator
+    ):
+        # Convert hex value to decimal
+        value_str = value_str.strip()
+        try:
+            if value_str.startswith("0x"):
+                raw_value = int(value_str, 16)
+            elif value_str.startswith("0") and len(value_str) > 1:
+                raw_value = int(value_str, 16)
+            else:
+                raw_value = int(value_str)
+        except ValueError:
+            # If conversion fails, keep original
+            return f"{new_ts_part} {ev_type:<12} {event_code:<20} {value_str}\n"
+
+        # For coordinate and touch size events, convert to pixels
+        if event_code == "ABS_MT_POSITION_X":
+            # Convert X coordinate (assuming Y=0 for single coordinate conversion)
+            if coordinate_translator:
+                pixel_x, _ = coordinate_translator(raw_value, 0)
+                return f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_x:>12}\n"
+        elif event_code == "ABS_MT_POSITION_Y":
+            # Convert Y coordinate (assuming X=0 for single coordinate conversion)
+            if coordinate_translator:
+                _, pixel_y = coordinate_translator(0, raw_value)
+                return f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_y:>12}\n"
+        elif event_code == "ABS_MT_TOUCH_MAJOR":
+            # Convert major axis size - use X axis scaling for consistency
+            if coordinate_translator:
+                pixel_major, _ = coordinate_translator(raw_value, 0)
+                return (
+                    f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_major:>12}\n"
+                )
+        elif event_code == "ABS_MT_TOUCH_MINOR":
+            # Convert minor axis size - use Y axis scaling for consistency
+            if coordinate_translator:
+                _, pixel_minor = coordinate_translator(0, raw_value)
+                return (
+                    f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_minor:>12}\n"
+                )
+
+    # For non-coordinate events, just adjust timestamp and format
+    return f"{new_ts_part} {ev_type:<12} {event_code:<20} {value_str}\n"
+
+
+def cleanup_log():
+    """
+    Post-processes the touch-event log so that:
+    1. Every record begins with a "[" character (after optional whitespace).
+       If a line does not begin with "[" it is assumed to be a continuation of
+       the *previous* line and is therefore concatenated to that line.
+    2. Any still-raw hexadecimal/decimal touch values are converted to pixel
+       coordinates or sizes using the already-prepared *coordinate_translator*.
+
+       This routine must not rely on the high-resolution wall-clock logic used
+       elsewhere, therefore it performs its own lightweight parsing and value
+       conversion.
+    """
+
+    # We cannot do anything if the file does not exist (e.g. recording aborted)
+    if not os.path.exists(EVENT_LOG_FILE):
+        print(f"⚠️  Log file '{EVENT_LOG_FILE}' not found – skipping cleanup.")
+        return
+
+    try:
+        # One-pass clean-up: glue continuation lines *and* convert their values
+        with open(EVENT_LOG_FILE, "r") as fh:
+            raw_lines = fh.readlines()
+
+        # Mapping to know which event codes are coordinates/sizes
+        coord_codes = {
+            "ABS_MT_POSITION_X": True,  # True  => X-axis
+            "ABS_MT_POSITION_Y": False,  # False => Y-axis
+            "ABS_MT_TOUCH_MAJOR": True,
+            "ABS_MT_TOUCH_MINOR": False,
+        }
+
+        cleaned_lines = []
+
+        for line in raw_lines:
+            if re.match(r"\s*\[", line):
+                # Proper line → just stash it (untouched)
+                cleaned_lines.append(line)
+                continue
+
+            # Otherwise this is a continuation containing the value portion.
+            if not cleaned_lines:
+                # No previous line to attach to; skip
+                continue
+
+            prev = cleaned_lines.pop().rstrip("\n")
+            glued = prev + " " + line.strip()  # combine & strip extra NLs/spaces
+
+            # Try to convert the newly-added value *only for this glued line*.
+            m = re.match(r"(\[\s*[^]]+\]\s+)(\S+)\s+(\S+)\s+(\S+)", glued)
+            if m and coordinate_translator is not None and m.group(3) in coord_codes:
+                ts_part, ev_type, event_code, value_str = m.groups()
+
+                # Convert numeric string (hex or decimal) → int
+                try:
+                    raw_val = (
+                        int(value_str, 16)
+                        if value_str.startswith("0")
+                        else int(value_str)
+                    )
+                except ValueError:
+                    cleaned_lines.append(glued + "\n")
+                    continue
+
+                if coord_codes[event_code]:
+                    px, _ = coordinate_translator(raw_val, 0)
+                    new_val = f"{px:>12}"
+                else:
+                    _, py = coordinate_translator(0, raw_val)
+                    new_val = f"{py:>12}"
+
+                glued = f"{ts_part}{ev_type:<12} {event_code:<20} {new_val}"
+
+            cleaned_lines.append(glued + "\n")
+
+        # --- Second pass: smooth outlier timestamps ---------------------------------
+
+        def extract_ts(line: str):
+            """Return float timestamp inside leading brackets or None."""
+            m_ts = re.match(r"\s*\[\s*([0-9]+\.[0-9]+)\s*\]", line)
+            return float(m_ts.group(1)) if m_ts else None
+
+        fixed_lines = cleaned_lines[:]
+        for i in range(1, len(cleaned_lines) - 1):
+            prev_ts = extract_ts(cleaned_lines[i - 1])
+            cur_ts = extract_ts(cleaned_lines[i])
+            next_ts = extract_ts(cleaned_lines[i + 1])
+            if None in (prev_ts, cur_ts, next_ts):
+                print("⚠️ Warning: Log line without timestamp found")
+                continue
+
+            if cur_ts > 100 * prev_ts:
+                new_ts_val = (prev_ts + next_ts) / 2.0
+                # Re-format with same 13.6f width used elsewhere
+                new_ts_str = f"[{new_ts_val:13.6f}]"
+                # Substitute only the bracketed timestamp portion
+                fixed_lines[i] = re.sub(
+                    r"^\s*\[[^]]+\]", new_ts_str, cleaned_lines[i], count=1
+                )
+
+        # Overwrite the original log with the cleaned & smoothed content
+        with open(EVENT_LOG_FILE, "w") as fh:
+            fh.writelines(fixed_lines)
+
+        print("🧹 Log cleanup completed – saved to", EVENT_LOG_FILE)
+    except Exception as e:
+        print(f"❌ Error during log cleanup: {e}")
 
 
 def main():
@@ -441,94 +639,7 @@ def main():
                 pass
 
         event_log_file.flush()
-        time.sleep(0.01)  # Prevent busy-waiting
-
-
-def process_event_line(line):
-    """
-    Process a single event line, converting coordinates to pixels and adjusting timestamp.
-
-    Args:
-        line: Raw event line from getevent
-
-    Returns:
-        Processed line string or None if line should be skipped
-    """
-    global coordinate_translator, first_tap_time, first_video_frame_time, video_frame_detected
-
-    if not line.strip():
-        return None
-
-    # Parse the line to extract timestamp and event info
-    match = re.match(r"\[\s*(\d+\.\d+)\s*\]\s+(\S+)\s+(\S+)\s+(.+)", line)
-    if not match:
-        return line  # Return original line if parsing fails
-
-    android_timestamp_str, ev_type, event_code, value_str = match.groups()
-
-    # Calculate video-relative timestamp
-    current_time = time.time()
-    if video_frame_detected and first_video_frame_time is not None:
-        # Use video frame time as reference (time 0)
-        video_timestamp = current_time - first_video_frame_time + EVENT_FUDGE
-    else:
-        # Fallback: use first tap time as temporary reference
-        video_timestamp = current_time - first_tap_time if first_tap_time else 0.0
-
-    new_ts_part = f"[{video_timestamp:13.6f}]"
-
-    # Handle coordinate translation for touch position and size events
-    if (
-        event_code
-        in [
-            "ABS_MT_POSITION_X",
-            "ABS_MT_POSITION_Y",
-            "ABS_MT_TOUCH_MAJOR",
-            "ABS_MT_TOUCH_MINOR",
-        ]
-        and coordinate_translator
-    ):
-        # Convert hex value to decimal
-        value_str = value_str.strip()
-        try:
-            if value_str.startswith("0x"):
-                raw_value = int(value_str, 16)
-            elif value_str.startswith("0") and len(value_str) > 1:
-                raw_value = int(value_str, 16)
-            else:
-                raw_value = int(value_str)
-        except ValueError:
-            # If conversion fails, keep original
-            return f"{new_ts_part} {ev_type:<12} {event_code:<20} {value_str}\n"
-
-        # For coordinate and touch size events, convert to pixels
-        if event_code == "ABS_MT_POSITION_X":
-            # Convert X coordinate (assuming Y=0 for single coordinate conversion)
-            if coordinate_translator:
-                pixel_x, _ = coordinate_translator(raw_value, 0)
-                return f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_x:>12}\n"
-        elif event_code == "ABS_MT_POSITION_Y":
-            # Convert Y coordinate (assuming X=0 for single coordinate conversion)
-            if coordinate_translator:
-                _, pixel_y = coordinate_translator(0, raw_value)
-                return f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_y:>12}\n"
-        elif event_code == "ABS_MT_TOUCH_MAJOR":
-            # Convert major axis size - use X axis scaling for consistency
-            if coordinate_translator:
-                pixel_major, _ = coordinate_translator(raw_value, 0)
-                return (
-                    f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_major:>12}\n"
-                )
-        elif event_code == "ABS_MT_TOUCH_MINOR":
-            # Convert minor axis size - use Y axis scaling for consistency
-            if coordinate_translator:
-                _, pixel_minor = coordinate_translator(0, raw_value)
-                return (
-                    f"{new_ts_part} {ev_type:<12} {event_code:<20} {pixel_minor:>12}\n"
-                )
-
-    # For non-coordinate events, just adjust timestamp and format
-    return f"{new_ts_part} {ev_type:<12} {event_code:<20} {value_str}\n"
+        time.sleep(0.01)
 
 
 if __name__ == "__main__":
