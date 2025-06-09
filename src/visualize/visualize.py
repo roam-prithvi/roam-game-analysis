@@ -15,10 +15,10 @@ from pathlib import Path
 import cv2, numpy as np, os, re, subprocess
 from tqdm.auto import tqdm  # nicer in notebooks
 
-# ------------- USER-CONFIGURABLE ------------- #
-VIDEO_FILE = Path("screen_recording.mp4")
-LOG_FILE = Path("touch_events.log")  # your "@touch_events.log"
-OUTPUT_FILE = Path("screen_recording_overlay.mp4")
+DIRECTORY = Path("data/subway surfers/08-06-25_at_19.33.00/")
+VIDEO_FILE = DIRECTORY / "screen_recording.mp4"
+LOG_FILE = DIRECTORY / "touch_events.log"  # your "@touch_events.log"
+OUTPUT_FILE = DIRECTORY / "screen_recording_overlay.mp4"
 TRAIL_SECS = 2  # how long the fading trail lasts
 # --------------------------------------------- #
 
