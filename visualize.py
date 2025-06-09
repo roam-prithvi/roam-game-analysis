@@ -19,7 +19,7 @@ from tqdm.auto import tqdm  # nicer in notebooks
 VIDEO_FILE = Path("screen_recording.mp4")
 LOG_FILE = Path("touch_events.log")  # your "@touch_events.log"
 OUTPUT_FILE = Path("screen_recording_overlay.mp4")
-TRAIL_SECS = 1.2  # how long the fading trail lasts
+TRAIL_SECS = 2  # how long the fading trail lasts
 # --------------------------------------------- #
 
 if OUTPUT_FILE.exists():
@@ -286,6 +286,7 @@ def precompute_touch_data_vfr(touches, frame_times):
 #  STEP 3 ── Render / overlay everything onto the video
 # -----------------------------------------------------------------
 def overlay_touches_on_video(video_path: Path, output_path: Path, touches):
+    print(f"🔍  Opening video: {video_path}")
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
         raise FileNotFoundError(f"❌  Could not open video: {video_path}")
@@ -313,7 +314,7 @@ def overlay_touches_on_video(video_path: Path, output_path: Path, touches):
     frame_touches = precompute_touch_data_vfr(touches, frame_times)
     out_writer, real_out = _open_video_writer(output_path, W, H, fps_out)
 
-    colours = [
+    colors = [
         (0, 0, 255),
         (255, 0, 0),
         (0, 255, 0),
@@ -328,27 +329,29 @@ def overlay_touches_on_video(video_path: Path, output_path: Path, touches):
             break
         for item in frame_touches[fi]:
             idx, pos, trail = item["touch_idx"], item["pos"], item["trail"]
-            col = colours[idx % len(colours)]
+            col = colors[idx % len(colors)]
 
             # Fading trail
             for i in range(1, len(trail)):
                 a = i / len(trail)
                 col2 = tuple(int(c * a) for c in col)
-                cv2.line(frame, trail[i - 1], trail[i], col2, 3)
+                cv2.line(
+                    frame, trail[i - 1], trail[i], col2, 9
+                )  # Changed thickness to 9
 
             # Current point
-            cv2.circle(frame, pos, 20, col, 3)
-            cv2.circle(frame, pos, 15, (255, 255, 255), -1)
-            cv2.circle(frame, pos, 15, col, 2)
-            cv2.putText(
-                frame,
-                f"T{idx}",
-                (pos[0] + 25, pos[1] - 25),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                col,
-                2,
-            )
+            cv2.circle(frame, pos, 40, col, 3)
+            cv2.circle(frame, pos, 30, (255, 255, 255), -1)
+            cv2.circle(frame, pos, 30, col, 2)
+            # cv2.putText(
+            #     frame,
+            #     f"T{idx}",
+            #     (pos[0] + 25, pos[1] - 25),
+            #     cv2.FONT_HERSHEY_SIMPLEX,
+            #     0.7,
+            #     col,
+            #     2,
+            # )
 
         out_writer.write(frame)
         bar.update()
