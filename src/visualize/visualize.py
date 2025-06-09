@@ -11,11 +11,12 @@ average FPS from the video's timestamps and **always use that value**.
 
 import bisect  # NEW
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import cv2, numpy as np, os, re, subprocess
 from tqdm.auto import tqdm  # nicer in notebooks
 
-DIRECTORY = Path("data/subway surfers/08-06-25_at_19.33.00/")
+DIRECTORY = Path("data/minecraft/08-06-25_at_22.26.32/")
 VIDEO_FILE = DIRECTORY / "screen_recording.mp4"
 LOG_FILE = DIRECTORY / "touch_events.log"  # your "@touch_events.log"
 OUTPUT_FILE = DIRECTORY / "screen_recording_overlay.mp4"
@@ -29,7 +30,9 @@ if OUTPUT_FILE.exists():
 # ---------------------------------------------------------------
 #  UTILITY ── Try several codec / container combos until one works
 # ---------------------------------------------------------------
-def _open_video_writer(out_path: Path, w: int, h: int, fps: float):
+def _open_video_writer(
+    out_path: Path, w: int, h: int, fps: float
+) -> Tuple[cv2.VideoWriter, Path]:
     """
     Returns (VideoWriter, real_output_path).
 
@@ -139,17 +142,18 @@ def _probe_video_fps(cap: cv2.VideoCapture, path: Path) -> float:
 _TS_RE = re.compile(r"\[\s*(\d+\.\d+)\]")  # extracts the timestamp
 
 
-def parse_touch_log(path: Path, *, max_time: float = 5_000.0):
+def parse_touch_log(path: Path, *, max_time: float = 5_000.0) -> List[Dict[str, Any]]:
     """
     Robustly parse an Android *touch_events.log* file.
 
     • Lines that cannot be parsed are skipped.
     • Events beyond `max_time` seconds are ignored (outliers).
     """
-    touches, active = [], {}  # active[id] = (x, y)
+    touches: List[Dict[str, Any]] = []
+    active: Dict[int, Tuple[Optional[int], Optional[int]]] = {}  # active[id] = (x, y)
 
     # Helper -------------------------------------------------------
-    def _safe_int(txt: str, base: int = 10):
+    def _safe_int(txt: str, base: int = 10) -> Optional[int]:
         try:
             return int(txt, base)
         except ValueError:
@@ -213,7 +217,7 @@ def parse_touch_log(path: Path, *, max_time: float = 5_000.0):
 # ---------------------------------------------------------------
 #  UTILITY ── Collect per-frame timestamps (handles VFR sources)
 # ---------------------------------------------------------------
-def _collect_frame_timestamps(path: Path):
+def _collect_frame_timestamps(path: Path) -> List[float]:
     """
     Return a list with the presentation-timestamp (in seconds) of every
     decoded frame in *path*.
@@ -225,7 +229,7 @@ def _collect_frame_timestamps(path: Path):
     if not cap.isOpened():
         raise FileNotFoundError(f"❌  Could not open video: {path}")
 
-    pts = []
+    pts: List[float] = []
     while True:
         ok, _ = cap.read()
         if not ok:
@@ -240,20 +244,22 @@ def _collect_frame_timestamps(path: Path):
 # -----------------------------------------------------------------
 #  VFR-aware helper ── Convert raw "touches" into per-frame overlays
 # -----------------------------------------------------------------
-def precompute_touch_data_vfr(touches, frame_times):
+def precompute_touch_data_vfr(
+    touches: Sequence[Dict[str, Any]], frame_times: Sequence[float]
+) -> List[List[Dict[str, Any]]]:
     n_frames = len(frame_times)
-    per_frame = [[] for _ in range(n_frames)]
+    per_frame: List[List[Dict[str, Any]]] = [[] for _ in range(n_frames)]
     trail_secs = TRAIL_SECS
 
     # ---- Bucket events by target frame using bisect ----------------
-    buckets = {}
+    buckets: Dict[int, List[Dict[str, Any]]] = {}
     for ev in touches:
         fi = bisect.bisect_left(frame_times, ev["time"])
         if 0 <= fi < n_frames:
             buckets.setdefault(fi, []).append(ev)
 
     # ---- Build trails frame-by-frame --------------------------------
-    trails = {}  # id → list[(t,(x,y))]
+    trails: Dict[int, List[Tuple[float, Tuple[int, int]]]] = {}  # id → list[(t,(x,y))]
     for fi in range(n_frames):
         current_t = frame_times[fi]
 
@@ -285,7 +291,9 @@ def precompute_touch_data_vfr(touches, frame_times):
 # -----------------------------------------------------------------
 #  STEP 3 ── Render / overlay everything onto the video
 # -----------------------------------------------------------------
-def overlay_touches_on_video(video_path: Path, output_path: Path, touches):
+def overlay_touches_on_video(
+    video_path: Path, output_path: Path, touches: Sequence[Dict[str, Any]]
+) -> None:
     print(f"🔍  Opening video: {video_path}")
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
