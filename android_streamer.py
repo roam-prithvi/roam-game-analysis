@@ -5,6 +5,7 @@ import shlex
 import signal
 import subprocess
 import sys
+import threading  # New: for monitoring FFmpeg stderr asynchronously
 import time
 
 # --- Configuration ---
@@ -188,7 +189,7 @@ def signal_handler(sig, frame):
     """Handles Ctrl+C to gracefully shut down all subprocesses."""
     print("\n🛑 Ctrl+C detected! Shutting down streams...")
     # Wait for a moment for processes to terminate
-    time.sleep(5)
+    time.sleep(1)
     for p in processes:
         try:
             p.terminate()  # Send termination signal
@@ -236,6 +237,41 @@ def check_first_video_frame():
         pass  # File doesn't exist yet or can't be accessed
 
     return False
+
+
+def monitor_ffmpeg_stderr(stderr_pipe, log_handle):
+    """Monitors FFmpeg stderr, writes it to *log_handle* and grabs the first-frame epoch.
+
+    The function looks for a line that contains "start: <epoch>" which is printed by
+    FFmpeg while probing the H.264 input.  That number is the host wall-clock time
+    (seconds since epoch) at which FFmpeg stamped the *very first* video frame.
+    As soon as we find it we use it as a high-precision substitute for
+    ``first_video_frame_time``.
+    """
+    global first_video_frame_time, video_frame_detected
+
+    start_re = re.compile(r"start:\s*([0-9]+\.[0-9]+)")
+
+    for raw in iter(stderr_pipe.readline, b""):
+        line = raw.decode(errors="replace")
+        # Always replicate the line to the on-disk log
+        log_handle.write(line)
+
+        if not video_frame_detected:
+            m = start_re.search(line)
+            if m:
+                try:
+                    first_video_frame_time = float(m.group(1))
+                    video_frame_detected = True
+                    print(
+                        f"🎬 First video frame wall-clock captured from FFmpeg: {first_video_frame_time:.6f}"
+                    )
+                except ValueError:
+                    pass  # Ignore parse issues – fallback will handle
+
+        log_handle.flush()
+
+    stderr_pipe.close()
 
 
 def main():
@@ -313,7 +349,7 @@ def main():
             video_command,
             shell=True,
             stdout=subprocess.DEVNULL,
-            stderr=video_log_file,
+            stderr=subprocess.PIPE,
         )
         processes.append(video_process)
         print(f"🔴 REC: Video recording started at {stream_start_time:.6f}")
@@ -329,6 +365,15 @@ def main():
         if processed_line:
             event_log_file.write(processed_line)
         event_log_file.flush()
+
+        # Start a background thread to tee FFmpeg stderr to the log file and
+        # extract high-precision first-frame timing information.
+        threading.Thread(
+            target=monitor_ffmpeg_stderr,
+            args=(video_process.stderr, video_log_file),
+            daemon=True,
+        ).start()
+
         break  # Exit loop after handling the first event
 
     if first_tap_time is None:
