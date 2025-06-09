@@ -8,6 +8,7 @@ import subprocess
 import sys
 import threading  # New: for monitoring FFmpeg stderr asynchronously
 import time
+from typing import Any, Callable, IO, Optional, Tuple  # ➕ typing imports
 
 # --- Configuration ---
 # TODO: if adb not in PATH, try to find it, then download it, then add it to PATH and set ADB_PATH to the full path
@@ -103,7 +104,7 @@ def prepare_output_paths() -> str:
     return session_dir
 
 
-def find_touchscreen_device():
+def find_touchscreen_device() -> str:
     """
     Finds the event device path for the main touchscreen.
 
@@ -160,7 +161,7 @@ def find_touchscreen_device():
     sys.exit(1)
 
 
-def get_screen_size():
+def get_screen_size() -> Tuple[Optional[int], Optional[int]]:
     """Gets the physical screen size (resolution) of the device."""
     print("📏 Getting screen size...")
     try:
@@ -183,7 +184,9 @@ def get_screen_size():
     return None, None
 
 
-def get_input_device_ranges(device_path):
+def get_input_device_ranges(
+    device_path: str,
+) -> Tuple[Optional[int], Optional[int], Optional[int], Optional[int]]:
     """
     Gets the coordinate ranges for ABS_MT_POSITION_X and ABS_MT_POSITION_Y
     from the input device to enable coordinate translation.
@@ -226,8 +229,13 @@ def get_input_device_ranges(device_path):
 
 
 def create_coordinate_translator(
-    x_min, x_max, y_min, y_max, screen_width, screen_height
-):
+    x_min: Optional[int],
+    x_max: Optional[int],
+    y_min: Optional[int],
+    y_max: Optional[int],
+    screen_width: Optional[int],
+    screen_height: Optional[int],
+) -> Optional[Callable[[int, int], Tuple[int, int]]]:
     """
     Creates a function that translates raw touch coordinates to pixel coordinates.
 
@@ -245,7 +253,7 @@ def create_coordinate_translator(
         print("⚠️ Missing coordinate info, translation will not be available")
         return None
 
-    def translate(raw_x, raw_y):
+    def translate(raw_x: int, raw_y: int) -> Tuple[int, int]:
         # Linear interpolation from raw range to pixel range
         pixel_x = int((raw_x - x_min) * screen_width / (x_max - x_min))
         pixel_y = int((raw_y - y_min) * screen_height / (y_max - y_min))
@@ -257,7 +265,7 @@ def create_coordinate_translator(
     return translate
 
 
-def signal_handler(sig, frame):
+def signal_handler(sig: int, frame: Any) -> None:
     """Handles Ctrl+C to gracefully shut down all subprocesses."""
     print("\n🛑 Ctrl+C detected! Shutting down streams...")
     # Wait for a moment for processes to terminate
@@ -290,7 +298,7 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def check_first_video_frame():
+def check_first_video_frame() -> bool:
     """
     Check if the first video frame has been written by monitoring file size.
     Returns True if first frame detected, False otherwise.
@@ -313,7 +321,7 @@ def check_first_video_frame():
     return False
 
 
-def monitor_ffmpeg_stderr(stderr_pipe, log_handle):
+def monitor_ffmpeg_stderr(stderr_pipe: IO[bytes], log_handle: IO[str]) -> None:
     """Monitors FFmpeg stderr, writes it to *log_handle* and grabs the first-frame epoch.
 
     The function looks for a line that contains "start: <epoch>" which is printed by
@@ -345,7 +353,7 @@ def monitor_ffmpeg_stderr(stderr_pipe, log_handle):
     stderr_pipe.close()
 
 
-def process_event_line(line):
+def process_event_line(line: str) -> Optional[str]:
     """
     Process a single event line, converting coordinates to pixels and adjusting timestamp.
 
@@ -432,7 +440,7 @@ def process_event_line(line):
     return f"{new_ts_part} {ev_type:<12} {event_code:<20} {value_str}\n"
 
 
-def cleanup_log():
+def cleanup_log() -> None:
     """
     Post-processes the touch-event log so that:
     1. Every record begins with a "[" character (after optional whitespace).
@@ -464,7 +472,7 @@ def cleanup_log():
             "ABS_MT_TOUCH_MINOR": False,
         }
 
-        cleaned_lines = []
+        cleaned_lines: list[str] = []
 
         for line in raw_lines:
             if re.match(r"\s*\[", line):
@@ -509,7 +517,7 @@ def cleanup_log():
 
         # --- Second pass: smooth outlier timestamps ---------------------------------
 
-        def extract_ts(line: str):
+        def extract_ts(line: str) -> Optional[float]:
             """Return float timestamp inside leading brackets or None."""
             m_ts = re.match(r"\s*\[\s*([0-9]+\.[0-9]+)\s*\]", line)
             return float(m_ts.group(1)) if m_ts else None
@@ -541,7 +549,7 @@ def cleanup_log():
         print(f"❌ Error during log cleanup: {e}")
 
 
-def main():
+def main() -> None:
     """Main function to set up and run the concurrent streams."""
     global event_log_file, coordinate_translator, stream_start_time, first_tap_time, first_video_frame_time, video_frame_detected, video_log_file
     # Set up the Ctrl+C handler
