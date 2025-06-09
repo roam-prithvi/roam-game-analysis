@@ -4,7 +4,9 @@ you receive two screenshots of the game a couple seconds apart. your task is to 
 - find and describe all the UI elements (buttons, textboxes depicting score/stats/HP/etc), 
 - describe the background separately.
 
-answer in three lists: one list of assets (asset name and 1-sentence description to prompt your ai agent), 
+note that the assets can range from photorealistic to cartoonish in the game screenshots; recognize what object that asset represents regardless.
+for primary and secondary color, always output the color name and never hex or rgb.
+
+answer in three lists: one list of assets (succinct asset name and 1-sentence description to prompt your ai agent), 
 second list of UI elements (same format)
-and third list (describe background in <5 sentences, making sure to note the lighting, the style (toon, 
-realistic etc) and the camera position)
+and third list (describe background in <5 sentences, making sure to note the lighting, the style, and the camera position)

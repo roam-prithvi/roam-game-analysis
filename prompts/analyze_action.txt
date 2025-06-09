@@ -22,7 +22,8 @@ secondly, in a list describe the effect of the player's action on every asset an
 you determined earlier that the assets and UI elements on the first photo (before action) are as follows in the "assets" and "ui_elements" tags respectively. 
 (the list might not be exhaustive, especially note if new assets / UI elements have appeared due to user action).
 note overlays: if some element is within another element, e.g. if there's a crown symbol in a UI
-it's crucial that you get the names of the assets or UI elements right. note that they can range from photorealistic to cartoonish in the game screenshots.
+it's crucial that you get the names of the assets and UI elements right - i.e. in your output, they must be the same as in the respective xml tags. (ofc if there are new ones, feel free to invent a sensible name)
+note that the assets can range from photorealistic to cartoonish in the game screenshots; recognize what object that asset represents regardless.
 
 {{ assets_xml }}
 {{ ui_elements_xml }}
