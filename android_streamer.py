@@ -17,6 +17,7 @@ VIDEO_OUTPUT_FILE = "screen_recording.mp4"  # The file where video will be saved
 VIDEO_ERROR_LOG_FILE = (
     "video_error.log"  # File to capture FFmpeg/ADB errors and diagnostics
 )
+EVENT_FUDGE = 0.20  # seconds, TODO increase -> touch events appear later
 
 # --- Global variable to hold our running processes ---
 processes = []
@@ -260,14 +261,11 @@ def monitor_ffmpeg_stderr(stderr_pipe, log_handle):
         if not video_frame_detected:
             m = start_re.search(line)
             if m:
-                try:
-                    first_video_frame_time = float(m.group(1))
+                ts = float(m.group(1))
+                # Ignore the value if it is obviously "0" or not an epoch
+                if ts > 2_000_000_000:  # rough cut-off: year ≈ 2033
+                    first_video_frame_time = ts
                     video_frame_detected = True
-                    print(
-                        f"🎬 First video frame wall-clock captured from FFmpeg: {first_video_frame_time:.6f}"
-                    )
-                except ValueError:
-                    pass  # Ignore parse issues – fallback will handle
 
         log_handle.flush()
 
@@ -472,7 +470,7 @@ def process_event_line(line):
     current_time = time.time()
     if video_frame_detected and first_video_frame_time is not None:
         # Use video frame time as reference (time 0)
-        video_timestamp = current_time - first_video_frame_time
+        video_timestamp = current_time - first_video_frame_time + EVENT_FUDGE
     else:
         # Fallback: use first tap time as temporary reference
         video_timestamp = current_time - first_tap_time if first_tap_time else 0.0
