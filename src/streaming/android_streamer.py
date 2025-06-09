@@ -8,7 +8,9 @@ import subprocess
 import sys
 import threading  # New: for monitoring FFmpeg stderr asynchronously
 import time
-from typing import Any, Callable, IO, Optional, Tuple  # ➕ typing imports
+from typing import Any, Callable, IO, Optional, Tuple
+
+from src.util import sanitize_path_component  # ➕ typing imports
 
 # --- Configuration ---
 # TODO: if adb not in PATH, try to find it, then download it, then add it to PATH and set ADB_PATH to the full path
@@ -32,19 +34,6 @@ stream_start_time = None  # When video recording subprocess is launched
 first_tap_time = None  # When first touch event is processed
 first_video_frame_time = None  # When video file is first modified (first frame written)
 video_frame_detected = False  # Flag to track if first video frame has been detected
-
-# ---------------------------------------------------------------------------
-# 🏗️  Session-directory preparation helpers
-# ---------------------------------------------------------------------------
-
-
-def sanitize_path_component(component: str) -> str:
-    """Return a filesystem-safe version of *component*."""
-    # Keep letters, numbers, underscore, hyphen and space; drop the rest.
-    safe = re.sub(r"[^A-Za-z0-9 _\-]", "", component).strip()
-    # Compress whitespace to single spaces.
-    safe = re.sub(r"\s+", " ", safe)
-    return safe or "unnamed"
 
 
 def prepare_output_paths() -> str:

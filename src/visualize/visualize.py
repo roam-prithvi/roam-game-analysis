@@ -10,21 +10,22 @@ average FPS from the video's timestamps and **always use that value**.
 """
 
 import bisect  # NEW
+import re
+import subprocess
+import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-import cv2, numpy as np, os, re, subprocess
-from tqdm.auto import tqdm  # nicer in notebooks
+import cv2
+import numpy as np
 
-DIRECTORY = Path("data/minecraft/08-06-25_at_22.26.32/")
-VIDEO_FILE = DIRECTORY / "screen_recording.mp4"
-LOG_FILE = DIRECTORY / "touch_events.log"  # your "@touch_events.log"
-OUTPUT_FILE = DIRECTORY / "screen_recording_overlay.mp4"
-TRAIL_SECS = 2  # how long the fading trail lasts
+from src.util import list_sessions, sanitize_path_component
+from tqdm.auto import tqdm
+
+# Duration (in seconds) for which a touch trail remains visible.
+TRAIL_SECS: int = 2
 # --------------------------------------------- #
-
-if OUTPUT_FILE.exists():
-    OUTPUT_FILE.unlink()  # overwrite old result
 
 
 # ---------------------------------------------------------------
@@ -244,7 +245,7 @@ def _collect_frame_timestamps(path: Path) -> List[float]:
 # -----------------------------------------------------------------
 #  VFR-aware helper ── Convert raw "touches" into per-frame overlays
 # -----------------------------------------------------------------
-def precompute_touch_data_vfr(
+def _precompute_touch_data_vfr(
     touches: Sequence[Dict[str, Any]], frame_times: Sequence[float]
 ) -> List[List[Dict[str, Any]]]:
     n_frames = len(frame_times)
@@ -291,7 +292,7 @@ def precompute_touch_data_vfr(
 # -----------------------------------------------------------------
 #  STEP 3 ── Render / overlay everything onto the video
 # -----------------------------------------------------------------
-def overlay_touches_on_video(
+def _overlay_touches_on_video(
     video_path: Path, output_path: Path, touches: Sequence[Dict[str, Any]]
 ) -> None:
     print(f"🔍  Opening video: {video_path}")
@@ -319,7 +320,7 @@ def overlay_touches_on_video(
         f"🎬  Video: {W}×{H} | meta {fps_meta:.3f} fps, median {fps_out:.3f} fps | {N} frames"
     )
 
-    frame_touches = precompute_touch_data_vfr(touches, frame_times)
+    frame_touches = _precompute_touch_data_vfr(touches, frame_times)
     out_writer, real_out = _open_video_writer(output_path, W, H, fps_out)
 
     colors = [
@@ -370,16 +371,103 @@ def overlay_touches_on_video(
     print(f"✅  Finished – output saved to: {real_out}")
 
 
-if __name__ == "__main__":
-    if OUTPUT_FILE.exists():
-        os.remove(OUTPUT_FILE)  # Remove the previous overlay file
-    if not VIDEO_FILE.exists():
-        raise FileNotFoundError(f"⚠️  {VIDEO_FILE} not found.")
-    if not LOG_FILE.exists():
-        raise FileNotFoundError(f"⚠️  {LOG_FILE} not found.")
+# -----------------------------------------------------------------
+#  PUBLIC API ── Convenience wrapper around the full workflow
+# -----------------------------------------------------------------
 
+
+def process_directory(directory: str | Path) -> None:
+    """Run the full overlay pipeline for *directory*.
+
+    The *directory* should contain:
+      • ``screen_recording.mp4`` – original screen recording
+      • ``touch_events.log``      – processed touch-event log
+
+    The resulting file ``screen_recording_overlay.mp4`` will be written
+    to the same folder (any existing file with that name is overwritten).
+    """
+
+    dir_path: Path = Path(directory)
+
+    video_file: Path = dir_path / "screen_recording.mp4"
+    log_file: Path = dir_path / "touch_events.log"
+    output_file: Path = dir_path / "screen_recording_overlay.mp4"
+
+    # Ensure we start from a clean slate
+    if output_file.exists():
+        output_file.unlink()
+
+    # Sanity checks --------------------------------------------------
+    if not video_file.exists():
+        raise FileNotFoundError(f"⚠️  {video_file} not found.")
+    if not log_file.exists():
+        raise FileNotFoundError(f"⚠️  {log_file} not found.")
+
+    # Parse the touch log -------------------------------------------
     print("🔍  Parsing touch-event log …")
-    touch_data = parse_touch_log(LOG_FILE)
+    touch_data = parse_touch_log(log_file)
     print(f"   ↳ {len(touch_data):,} events parsed.")
 
-    overlay_touches_on_video(VIDEO_FILE, OUTPUT_FILE, touch_data)
+    # Overlay & encode ----------------------------------------------
+    _overlay_touches_on_video(video_file, output_file, touch_data)
+
+
+if __name__ == "__main__":
+    """
+    Interactive CLI for visualising touch-event overlays.
+
+    1. Ask the user for the *game name*.
+    2. Look inside  data/<game_name>/  for session sub-directories.
+    3. Present the sessions newest → oldest and let the user choose.
+    4. Run the overlay pipeline for the chosen directory.
+    """
+
+    # ------------------------------------------------------------------
+    #  Step 1: Ask for the game name
+    # ------------------------------------------------------------------
+    base_data_dir: Path = Path("data")
+    game_name: str = input("🎮  Enter the game name: ").strip()
+    while not game_name:
+        game_name = input("Please enter a non-empty game name: ").strip()
+
+    game_dir: Path = base_data_dir / sanitize_path_component(game_name)
+
+    if not game_dir.exists():
+        print(f"❌  Game directory not found: {game_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    # ------------------------------------------------------------------
+    #  Step 2: Enumerate recording sessions
+    # ------------------------------------------------------------------
+    sessions: List[Path] = list_sessions(game_dir)
+    if not sessions:
+        print(f"⚠️  No recording sessions found in {game_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    print("\n📂  Available recording sessions:")
+    for idx, sess in enumerate(sessions, start=1):
+        ts: str = datetime.fromtimestamp(sess.stat().st_mtime).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )  # used to show when modified
+        print(f"  {idx:>2}. {sess.name}")
+
+    # ------------------------------------------------------------------
+    #  Step 3: Let the user choose a session
+    # ------------------------------------------------------------------
+    choice_str: str = input(
+        f"\nSelect a session [1-{len(sessions)}] (default 1): "
+    ).strip()
+    if not choice_str:
+        choice_idx: int = 1
+    else:
+        try:
+            choice_idx = int(choice_str)
+            if not (1 <= choice_idx <= len(sessions)):
+                raise ValueError
+        except ValueError:
+            print("❌  Invalid selection – exiting.", file=sys.stderr)
+            sys.exit(1)
+
+    chosen_dir: Path = sessions[choice_idx - 1]
+    print(f"\n▶️  Processing: {chosen_dir}\n")
+    process_directory(chosen_dir)
