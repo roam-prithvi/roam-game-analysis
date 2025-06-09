@@ -1,3 +1,4 @@
+import difflib  # For fuzzy name suggestions
 import fcntl
 import os
 import re
@@ -30,6 +31,76 @@ stream_start_time = None  # When video recording subprocess is launched
 first_tap_time = None  # When first touch event is processed
 first_video_frame_time = None  # When video file is first modified (first frame written)
 video_frame_detected = False  # Flag to track if first video frame has been detected
+
+# ---------------------------------------------------------------------------
+# 🏗️  Session-directory preparation helpers
+# ---------------------------------------------------------------------------
+
+
+def sanitize_path_component(component: str) -> str:
+    """Return a filesystem-safe version of *component*."""
+    # Keep letters, numbers, underscore, hyphen and space; drop the rest.
+    safe = re.sub(r"[^A-Za-z0-9 _\-]", "", component).strip()
+    # Compress whitespace to single spaces.
+    safe = re.sub(r"\s+", " ", safe)
+    return safe or "unnamed"
+
+
+def prepare_output_paths() -> str:
+    """Prompt for the current game's name and prepare the output folder tree.
+
+    The layout produced is:
+        data/<game_name>/<DD-MM-YY_at_HH.MM.SS>/
+            ├── touch_events.log
+            ├── screen_recording.mp4
+            └── video_error.log
+
+    Returns the absolute path to the freshly-created session directory.
+    """
+    game_name = input(
+        "🎮 Enter the name of the game you're currently playing: "
+    ).strip()
+    while not game_name:
+        game_name = input("Please enter a non-empty game name: ").strip()
+
+    safe_game = sanitize_path_component(game_name)
+
+    # --- "Maybe you meant" logic -----------------------------------------
+    # Look for a close existing folder name using difflib's SequenceMatcher.
+    existing_games = []
+    if os.path.isdir("data"):
+        existing_games = [
+            d for d in os.listdir("data") if os.path.isdir(os.path.join("data", d))
+        ]
+
+    if existing_games:
+        close_matches = difflib.get_close_matches(
+            safe_game, existing_games, n=1, cutoff=0.6
+        )
+        if close_matches and close_matches[0] != safe_game:
+            suggested = close_matches[0]
+            resp = input(
+                f"🤔 Did you mean '{suggested}'? Press Enter to accept, or type 'n' then press Enter to reject: "
+            )
+            # Accept suggestion if the user just hits Enter (empty string)
+            if resp == "":
+                safe_game = suggested
+
+    base_dir = os.path.join("data", safe_game)
+    os.makedirs(base_dir, exist_ok=True)
+
+    timestamp = time.strftime("%d-%m-%y_at_%H.%M.%S")
+    session_dir = os.path.join(base_dir, timestamp)
+    os.makedirs(session_dir, exist_ok=True)
+
+    # Update global output paths so the rest of the script can remain unchanged.
+    global EVENT_LOG_FILE, VIDEO_OUTPUT_FILE, VIDEO_ERROR_LOG_FILE
+    EVENT_LOG_FILE = os.path.join(session_dir, "touch_events.log")
+    VIDEO_OUTPUT_FILE = os.path.join(session_dir, "screen_recording.mp4")
+    VIDEO_ERROR_LOG_FILE = os.path.join(session_dir, "video_error.log")
+
+    print(f"📁 Saving all outputs to: {session_dir}")
+    return session_dir
 
 
 def find_touchscreen_device():
@@ -476,6 +547,9 @@ def main():
     # Set up the Ctrl+C handler
     signal.signal(signal.SIGINT, signal_handler)
 
+    # 🆕 Prepare game-specific output paths ------------------------------------
+    prepare_output_paths()
+
     # 1. Find the device and get device info
     touch_device = find_touchscreen_device()
     screen_width, screen_height = get_screen_size()
@@ -518,16 +592,19 @@ def main():
             "-f h264 -i - -c copy"
         )
 
+        # Quote the output path in case it contains spaces or special chars.
+        quoted_output_file = shlex.quote(VIDEO_OUTPUT_FILE)
+
         if screen_width and screen_height:
             video_command = (
                 f"{ADB_PATH} shell screenrecord --size {screen_width}x{screen_height} "
-                f"--output-format=h264 - | {ffmpeg_base} {VIDEO_OUTPUT_FILE}"
+                f"--output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
             )
             print(f"🎥 Recording at {screen_width}x{screen_height} resolution")
         else:
             video_command = (
                 f"{ADB_PATH} shell screenrecord --output-format=h264 - "
-                f"| {ffmpeg_base} {VIDEO_OUTPUT_FILE}"
+                f"| {ffmpeg_base} {quoted_output_file}"
             )
             print("🎥 Recording at default resolution")
 
