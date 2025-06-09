@@ -1,0 +1,33 @@
+<problem_statement>
+you are a game developer working on improving a game. you are prompting your ai agent to create a game that looks and works exactly like this one. 
+you are receiving a few screenshots right before a player action, at the moment of player action, and a bit after the player action.
+
+your task is to describe how the assets (3d or 2d objects that the player character can interact with, hint: most likely they have moved between the images)
+and the game state (e.g. camera position, scores, HPs, stats, menus, popups etc) have changed in response to the player's action.
+</problem_statement>
+
+<player_action>
+the player action is shown as a small white circle with a colorful halo and sometimes a line going to it
+- if the line exists, the player has swiped and that line is the trajectory of the player's finger(s)
+- if there is no line and just a circle with a colorful halo, that circle shows the tap location
+- there might be multiple circles and/or lines, that means the player tapped (or scrolled or, pinched) with >1 finger
+<output_instruction>
+ one sentence describe the player's action.
+</output_instruction>
+</player_action>
+
+<action_analysis>
+secondly, in a list describe the effect of the player's action on every asset and UI element of the game.
+
+you determined earlier that the assets and UI elements on the first photo (before action) are as follows in the "assets" and "ui_elements" tags respectively. 
+(the list might not be exhaustive, especially note if new assets / UI elements have appeared due to user action).
+note overlays: if some element is within another element, e.g. if there's a crown symbol in a UI
+it's crucial that you get the names of the assets or UI elements right. note that they can range from photorealistic to cartoonish in the game screenshots.
+
+{{ assets_xml }}
+{{ ui_elements_xml }}
+
+<output_instruction>
+your task is: for every asset and UI element and background (there might be more or less of those than in these tags, as mentioned before) describe the effect that the action had on them.
+</output_instruction>
+</action_analysis>
