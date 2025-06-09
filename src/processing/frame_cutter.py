@@ -5,10 +5,10 @@ from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
 
 import cv2
-from src.util import list_sessions, sanitize_path_component
 
 # Re-use the robust log parser already defined in the visualisation helper
-from src.visualize.visualize import parse_touch_log
+from src.processing.visualize import parse_touch_log
+from src.util import list_sessions, sanitize_path_component
 from tqdm.auto import tqdm
 
 # ---------------------------------------------------------------------------
