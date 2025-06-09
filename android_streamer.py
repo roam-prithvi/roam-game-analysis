@@ -13,11 +13,21 @@ import time
 ADB_PATH = "adb"  # Or provide a full path if 'adb' is not in your system's PATH
 EVENT_LOG_FILE = "touch_events.log"  # The file where raw touch events will be saved
 VIDEO_OUTPUT_FILE = "screen_recording.mp4"  # The file where video will be saved
+VIDEO_ERROR_LOG_FILE = (
+    "video_error.log"  # File to capture FFmpeg/ADB errors and diagnostics
+)
 
 # --- Global variable to hold our running processes ---
 processes = []
 event_log_file = None  # Global to be accessible by signal_handler
 coordinate_translator = None  # Global translator function
+video_log_file = None  # Log file handle for FFmpeg/ADB diagnostics
+
+# --- Timing synchronization variables ---
+stream_start_time = None  # When video recording subprocess is launched
+first_tap_time = None  # When first touch event is processed
+first_video_frame_time = None  # When video file is first modified (first frame written)
+video_frame_detected = False  # Flag to track if first video frame has been detected
 
 
 def find_touchscreen_device():
@@ -191,18 +201,46 @@ def signal_handler(sig, frame):
         if p.poll() is None:  # If process is still running
             p.kill()  # Force kill it
 
-    global event_log_file
+    global event_log_file, video_log_file
     if event_log_file and not event_log_file.closed:
         event_log_file.close()
         print("✅ Event log file closed.")
+
+    # Close video error log if open
+    if video_log_file and not video_log_file.closed:
+        video_log_file.close()
+        print("✅ Video error log file closed.")
 
     print("✅ All streams stopped.")
     sys.exit(0)
 
 
+def check_first_video_frame():
+    """
+    Check if the first video frame has been written by monitoring file size.
+    Returns True if first frame detected, False otherwise.
+    """
+    global first_video_frame_time, video_frame_detected
+
+    if video_frame_detected:
+        return True
+
+    try:
+        current_size = os.path.getsize(VIDEO_OUTPUT_FILE)
+        if current_size > 0:
+            first_video_frame_time = time.time()
+            video_frame_detected = True
+            print(f"🎬 First video frame detected at {first_video_frame_time:.6f}")
+            return True
+    except (FileNotFoundError, OSError):
+        pass  # File doesn't exist yet or can't be accessed
+
+    return False
+
+
 def main():
     """Main function to set up and run the concurrent streams."""
-    global event_log_file, coordinate_translator
+    global event_log_file, coordinate_translator, stream_start_time, first_tap_time, first_video_frame_time, video_frame_detected, video_log_file
     # Set up the Ctrl+C handler
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -228,7 +266,6 @@ def main():
     processes.append(event_process)
     print(f"🕒 Waiting for the first touch event to start recording...")
 
-    first_timestamp = None
     video_process = None
 
     # Block and wait for the first event to arrive
@@ -236,51 +273,65 @@ def main():
         if not line.strip():
             continue
 
-        print("👆 First touch detected! Starting video recording...")
+        # Capture first tap time
+        first_tap_time = time.time()
+        print(
+            f"👆 First touch detected at {first_tap_time:.6f}! Starting video recording..."
+        )
+
         # --- Video Stream ---
         # Build video command with proper resolution if available
+        ffmpeg_base = (
+            "ffmpeg -y -use_wallclock_as_timestamps 1 -fflags +genpts "
+            "-f h264 -i - -c copy"
+        )
+
         if screen_width and screen_height:
             video_command = (
                 f"{ADB_PATH} shell screenrecord --size {screen_width}x{screen_height} "
-                f"--output-format=h264 - | ffmpeg -y -f h264 -i - -c copy {VIDEO_OUTPUT_FILE}"
+                f"--output-format=h264 - | {ffmpeg_base} {VIDEO_OUTPUT_FILE}"
             )
             print(f"🎥 Recording at {screen_width}x{screen_height} resolution")
         else:
             video_command = (
                 f"{ADB_PATH} shell screenrecord --output-format=h264 - "
-                f"| ffmpeg -y -f h264 -i - -c copy {VIDEO_OUTPUT_FILE}"
+                f"| {ffmpeg_base} {VIDEO_OUTPUT_FILE}"
             )
             print("🎥 Recording at default resolution")
 
+        # Prepare video error log
+        video_log_file = open(VIDEO_ERROR_LOG_FILE, "a")
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        video_log_file.write(
+            f"\n[{timestamp}] Launching video command: {video_command}\n"
+        )
+        video_log_file.flush()
+
+        # Capture stream start time when video recording begins
+        stream_start_time = time.time()
         video_process = subprocess.Popen(
             video_command,
             shell=True,
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stderr=video_log_file,
         )
         processes.append(video_process)
+        print(f"🔴 REC: Video recording started at {stream_start_time:.6f}")
         print(f"🔴 REC: Video is being recorded to '{VIDEO_OUTPUT_FILE}'")
         print(
-            f"🔴 REC: Touch events are being recorded to '{EVENT_LOG_FILE}' (with pixel coordinates)"
+            f"🔴 REC: Touch events are being recorded to '{EVENT_LOG_FILE}' (with pixel coordinates and video-relative timestamps)"
         )
 
         event_log_file = open(EVENT_LOG_FILE, "w")
 
-        # Process the first line with coordinate translation
-        processed_line = process_event_line(line, None)
+        # Process the first line
+        processed_line = process_event_line(line)
         if processed_line:
-            match = re.search(r"\[\s*(\d+\.\d+)\s*\]", processed_line)
-            if match:
-                first_timestamp = float(match.group(1))
-                new_ts_part = f"[{0.0:13.6f}]"
-                adjusted_line = processed_line.replace(match.group(0), new_ts_part)
-                event_log_file.write(adjusted_line)
-            else:
-                event_log_file.write(processed_line)
+            event_log_file.write(processed_line)
         event_log_file.flush()
         break  # Exit loop after handling the first event
 
-    if first_timestamp is None:
+    if first_tap_time is None:
         print("ℹ️ No touch events received. The 'getevent' process may have exited.")
         stderr_output = event_process.stderr.read()
         if stderr_output:
@@ -299,11 +350,26 @@ def main():
     print(">>> Analysis session is running. Press Ctrl+C to stop. <<<")
     print("=========================================================")
 
-    # 4. Wait until the user interrupts
+    # 4. Main event processing loop with video frame monitoring
+    event_counter = 0
+    timeout_start = time.time()
+
     while True:
         if video_process.poll() is not None:
             print("ℹ️ Video recording process ended.")
             signal_handler(None, None)
+
+        # Check for first video frame every 10 events or if not detected yet
+        if event_counter % 10 == 0 or not video_frame_detected:
+            check_first_video_frame()
+
+            # Handle timeout for video frame detection
+            if not video_frame_detected and (time.time() - timeout_start) > 20:
+                print("⚠️ Timeout: First video frame not detected within 20 seconds")
+                print("⚠️ Continuing with timestamps relative to first tap...")
+                # Set video frame time to first tap time as fallback
+                first_video_frame_time = first_tap_time
+                video_frame_detected = True
 
         # Process any available touch events non-blockingly
         while True:
@@ -319,10 +385,11 @@ def main():
                 if not line.strip():
                     continue
 
-                # Process the line with coordinate translation
-                processed_line = process_event_line(line, first_timestamp)
+                # Process the line with video-relative timing
+                processed_line = process_event_line(line)
                 if processed_line:
                     event_log_file.write(processed_line)
+                    event_counter += 1
 
             except BlockingIOError:
                 break  # No more data available at the moment
@@ -334,18 +401,17 @@ def main():
         time.sleep(0.01)  # Prevent busy-waiting
 
 
-def process_event_line(line, first_timestamp):
+def process_event_line(line):
     """
     Process a single event line, converting coordinates to pixels and adjusting timestamp.
 
     Args:
         line: Raw event line from getevent
-        first_timestamp: First timestamp for adjustment (None for first event)
 
     Returns:
         Processed line string or None if line should be skipped
     """
-    global coordinate_translator
+    global coordinate_translator, first_tap_time, first_video_frame_time, video_frame_detected
 
     if not line.strip():
         return None
@@ -355,15 +421,18 @@ def process_event_line(line, first_timestamp):
     if not match:
         return line  # Return original line if parsing fails
 
-    timestamp_str, ev_type, event_code, value_str = match.groups()
-    timestamp = float(timestamp_str)
+    android_timestamp_str, ev_type, event_code, value_str = match.groups()
 
-    # Adjust timestamp if we have a first timestamp
-    if first_timestamp is not None:
-        adjusted_timestamp = timestamp - first_timestamp
-        new_ts_part = f"[{adjusted_timestamp:13.6f}]"
+    # Calculate video-relative timestamp
+    current_time = time.time()
+    if video_frame_detected and first_video_frame_time is not None:
+        # Use video frame time as reference (time 0)
+        video_timestamp = current_time - first_video_frame_time
     else:
-        new_ts_part = f"[{0.0:13.6f}]"
+        # Fallback: use first tap time as temporary reference
+        video_timestamp = current_time - first_tap_time if first_tap_time else 0.0
+
+    new_ts_part = f"[{video_timestamp:13.6f}]"
 
     # Handle coordinate translation for touch position and size events
     if (
