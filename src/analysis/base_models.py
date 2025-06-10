@@ -56,6 +56,7 @@ class ActionAnalysis(BaseModel):
     class Background(BaseModel):
         changes_due_to_action: str
 
+    player_action_description: str
     assets: List[Asset]
     ui_elements: List[UIElement]
     background: Background
