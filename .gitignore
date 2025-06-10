@@ -3,3 +3,9 @@
 .DS_Store
 data/
 **/__pycache__/**
+
+# SAM2 testing
+batch_bboxes/
+batch_cutouts/
+*.png
+*.jpg
