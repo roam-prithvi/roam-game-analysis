@@ -11,6 +11,15 @@ import numpy as np
 import sieve
 from PIL import Image
 
+# Separate confidence thresholds for YOLO (object detection) and SAM 2 (segmentation)
+# YOLO is much noisier, so we keep its threshold relatively low.
+# SAM 2 currently does not expose a comparable setting via the public
+# Sieve wrapper, but we declare the constant for future use and to make
+# the intent explicit.
+
+YOLO_CONFIDENCE_THRESHOLD: float = 0.20  # used when calling YOLOv8
+# SAM2_CONFIDENCE_THRESHOLD: float = 0.50  # reserved for potential SAM 2 tuning
+
 # Configure logging to suppress Sieve internal messages
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger("sieve").setLevel(logging.WARNING)
@@ -35,7 +44,9 @@ def suppress_output():
 
 
 async def get_object_bbox_batch(
-    images: List[sieve.File], object_name: str
+    images: List[sieve.File],
+    object_name: str,
+    confidence_threshold: float = YOLO_CONFIDENCE_THRESHOLD,
 ) -> List[List[int] | None]:
     """Get bounding boxes for an object using YOLOv8 for multiple images concurrently."""
     yolo = sieve.function.get("sieve/yolov8")
@@ -47,6 +58,7 @@ async def get_object_bbox_batch(
             file=image,
             classes=object_name,
             models="yolov8l-world",
+            confidence_threshold=confidence_threshold,
         )
         jobs.append(job)
 
@@ -72,13 +84,15 @@ async def get_object_bbox_batch(
 
 
 async def segment_images_batch(
-    files: List[sieve.File], object_name: str
+    files: List[sieve.File],
+    object_name: str,
+    confidence_threshold: float = YOLO_CONFIDENCE_THRESHOLD,
 ) -> List[Tuple[sieve.File, Dict[str, sieve.File]] | None]:
     """Segment objects from multiple images using text prompt concurrently."""
     sam = sieve.function.get("sieve/sam2")
 
     print(f"Fetching bounding boxes for '{object_name}' from {len(files)} images...")
-    boxes = await get_object_bbox_batch(files, object_name)
+    boxes = await get_object_bbox_batch(files, object_name, confidence_threshold)
 
     # Count successful detections
     successful_detections = sum(1 for box in boxes if box is not None)
@@ -133,6 +147,7 @@ async def cut_objects_batch(
     text_prompt: str,
     output_dir: str = "batch_cutouts",
     suppress_sieve_output: bool = True,
+    confidence_threshold: float = YOLO_CONFIDENCE_THRESHOLD,
 ) -> List[str]:
     """
     Cut out objects from multiple images using segmentation and save as transparent PNGs.
@@ -142,10 +157,18 @@ async def cut_objects_batch(
         text_prompt: Text description of the object to segment
         output_dir: Directory where to save the cutout images
         suppress_sieve_output: Whether to suppress Sieve internal debug messages
+        confidence_threshold: Confidence threshold for YOLOv8 detection
 
     Returns:
         List of output file paths for successfully processed images
     """
+    # -------------------------------------------------------------
+    # Debug: Show which prompt this batch is using
+    # -------------------------------------------------------------
+    print(
+        f"\n🔍 [cut_objects_batch] Text prompt: '{text_prompt}' (images: {len(image_paths)})"
+    )
+
     try:
         # Validate all input files exist
         for path in image_paths:
@@ -163,9 +186,13 @@ async def cut_objects_batch(
         # Run batch segmentation (optionally suppress Sieve output)
         if suppress_sieve_output:
             with suppress_output():
-                results = await segment_images_batch(images, text_prompt)
+                results = await segment_images_batch(
+                    images, text_prompt, confidence_threshold
+                )
         else:
-            results = await segment_images_batch(images, text_prompt)
+            results = await segment_images_batch(
+                images, text_prompt, confidence_threshold
+            )
 
         output_paths = []
         successful_count = 0
@@ -278,7 +305,11 @@ async def cut_objects_batch(
         raise
 
 
-async def get_object_bbox(image: sieve.File, object_name: str) -> List[int]:
+async def get_object_bbox(
+    image: sieve.File,
+    object_name: str,
+    confidence_threshold: float = YOLO_CONFIDENCE_THRESHOLD,
+) -> List[int]:
     """Get bounding box for an object using YOLOv8."""
     yolo = sieve.function.get("sieve/yolov8")
 
@@ -287,6 +318,7 @@ async def get_object_bbox(image: sieve.File, object_name: str) -> List[int]:
         file=image,
         classes=object_name,
         models="yolov8l-world",
+        confidence_threshold=confidence_threshold,
     )
 
     # .result() is synchronous according to Sieve docs
@@ -302,13 +334,15 @@ async def get_object_bbox(image: sieve.File, object_name: str) -> List[int]:
 
 
 async def segment_image(
-    file: sieve.File, object_name: str
+    file: sieve.File,
+    object_name: str,
+    confidence_threshold: float = YOLO_CONFIDENCE_THRESHOLD,
 ) -> Tuple[sieve.File, Dict[str, sieve.File]]:
     """Segment an object from an image using text prompt."""
     sam = sieve.function.get("sieve/sam2")
 
     print(f"Fetching bounding box for '{object_name}'...")
-    box = await get_object_bbox(file, object_name)
+    box = await get_object_bbox(file, object_name, confidence_threshold)
     print(f"Found bounding box: {box}")
 
     sam_prompt = {
@@ -322,7 +356,7 @@ async def segment_image(
     sam_job = sam.push(
         file=file,
         prompts=[sam_prompt],
-        model_type="large",  # Changed from "tiny" - Options: "tiny", "small", "base", "large" - larger models are more accurate but slower
+        model_type="large",  # Options: "tiny", "small", "base", "large" - larger models are more accurate but slower
         # Other available parameters to control sensitivity/quality:
         # preview_mode=False,  # If True, returns lower quality but faster results
         # normalize_coords=True,  # Whether to normalize coordinates (default: True)
@@ -335,7 +369,12 @@ async def segment_image(
     return sam_out
 
 
-async def cut_object(image_path: str, text_prompt: str, output_path: str) -> None:
+async def cut_object(
+    image_path: str,
+    text_prompt: str,
+    output_path: str,
+    confidence_threshold: float = YOLO_CONFIDENCE_THRESHOLD,
+) -> None:
     """
     Cut out an object from an image using segmentation and save as transparent PNG.
 
@@ -343,6 +382,7 @@ async def cut_object(image_path: str, text_prompt: str, output_path: str) -> Non
         image_path: Path to the input image
         text_prompt: Text description of the object to segment
         output_path: Path where to save the cutout image with transparency
+        confidence_threshold: Confidence threshold for YOLOv8 detection
     """
     try:
         if not os.path.exists(image_path):
@@ -353,7 +393,7 @@ async def cut_object(image_path: str, text_prompt: str, output_path: str) -> Non
 
         # Run segmentation to get masks
         print(f"Segmenting '{text_prompt}' from {image_path}...")
-        result = await segment_image(image, text_prompt)
+        result = await segment_image(image, text_prompt, confidence_threshold)
 
         # Handle the tuple result: (sieve.File, Dict[str, sieve.File])
         if isinstance(result, tuple) and len(result) >= 2:
@@ -429,7 +469,7 @@ async def main() -> None:
     project_root = os.path.dirname(
         os.path.dirname(script_dir)
     )  # Go up two levels from src/analysis/
-    text_prompt = "gold and orange coin with a star emblem"
+    text_prompt = "gold round coin"
 
     # Example 1: Single image processing (original functionality)
     # print("=== Single Image Processing ===")
@@ -458,15 +498,15 @@ async def main() -> None:
     # Find multiple images for batch processing (you can modify this path)
     batch_images = []
     data_dir = os.path.join(
-        project_root, "data", "subway surfers", "08-06-25_at_19.33.00"
+        project_root, "data", "subway surfers", "08-06-25_at_19.33.00", "frames"
     )
 
-    # Look for specific image files 3.png through 5.png
-    for i in range(3, 6):  # 3, 4, 5 for demo
-        filename = f"{i}.png"
-        full_path = os.path.join(data_dir, filename)
-        if os.path.exists(full_path):
-            batch_images.append(full_path)
+    # Filter for images ending with _time.png
+    if os.path.exists(data_dir):
+        for filename in os.listdir(data_dir):
+            if filename.endswith("_time.png"):
+                batch_images.append(os.path.join(data_dir, filename))
+        batch_images.sort()  # Sort for consistent ordering
 
     if len(batch_images) > 1:
         print(f"Processing {len(batch_images)} images in batch:")
@@ -477,7 +517,8 @@ async def main() -> None:
             output_paths = await cut_objects_batch(
                 image_paths=batch_images,
                 text_prompt=text_prompt,
-                output_dir="batch_cutouts",
+                output_dir=f"batch_cutouts/{text_prompt}",
+                confidence_threshold=YOLO_CONFIDENCE_THRESHOLD,
             )
 
             if output_paths:

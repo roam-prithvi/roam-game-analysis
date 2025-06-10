@@ -9,7 +9,7 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Set, Tuple
 
 import instructor
 from google import generativeai as genai  # type: ignore
@@ -28,6 +28,7 @@ from rich.progress import (
 from src import GEMINI_API_KEY
 from src.analysis.base_models import ActionAnalysis, SceneAnalysis
 from src.analysis.prompts import get_analyze_action_prompt, get_find_assets_prompt
+from src.analysis.sam2 import cut_objects_batch  # New import for asset segmentation
 from src.util import list_sessions, sanitize_path_component
 from tenacity import (
     retry,
@@ -36,13 +37,16 @@ from tenacity import (
     wait_exponential,
 )
 
-PROD: bool = True  # Set to True for production, False for development/testing
+from .mock_scene_analysis import mock_scene_analysis
+
+PROD: bool = False  # Set to True for production, False for development/testing
 LLM_NAME: str = (
     "models/gemini-2.5-pro-preview-06-05"
     if PROD
     else "models/gemini-2.5-flash-preview-05-20"
 )
 MAX_CONCURRENT_REQUESTS: int = 100 if PROD else 500
+MAX_CONCURRENT_SEGMENTATION: int = 10  # Limit simultaneous Sieve segmentation jobs
 
 # ---------------------------------------------------------------------------
 # 🛠️  Type stubs / aliases
@@ -418,15 +422,6 @@ def _write_action_output(session_dir: Path, results: Sequence[Dict[str, Any]]) -
 # ---------------------------------------------------------------------------
 
 
-def _load_first_two_time_images(frames_dir: Path) -> List[Path]:
-    """Return the first two *_time.png images in *frames_dir* (sorted)."""
-
-    images: List[Path] = sorted(p for p in frames_dir.glob("*_time.png") if p.is_file())
-    if len(images) < 2:
-        raise RuntimeError(f"Expected at least two *_time.png images in {frames_dir}")
-    return images[50:52]
-
-
 def _load_all_time_image_pairs(frames_dir: Path) -> List[tuple[Path, Path]]:
     """Return all consecutive pairs of *_time.png images in *frames_dir* (sorted)."""
 
@@ -489,58 +484,10 @@ async def _analyze_session(session_path: Path) -> List[Dict[str, Any]]:
     console = Console()
 
     if not PROD:
-        # Return mock data for development/testing
+        # Return mock data for development/testing. Makes it faster and saves Gemini requests.
         console.print("🧪  Development mode: Using mock scene analysis data")
 
         # Create mock data that matches the SceneAnalysis structure
-        mock_scene_analysis = {
-            "assets": [
-                {
-                    "name": "Player Character",
-                    "description": "A character in a white hoodie running on a skateboard",
-                    "primary_color": "white",
-                    "secondary_color": "red",
-                    "style": "toon",
-                    "shader": "unlit",
-                    "texture": "flat-color",
-                },
-                {
-                    "name": "Gold Coin",
-                    "description": "A floating, rotating, shiny gold coin collectible",
-                    "primary_color": "gold",
-                    "secondary_color": "yellow",
-                    "style": "toon",
-                    "shader": "unlit",
-                    "texture": "flat-color",
-                },
-            ],
-            "ui_elements": [
-                {
-                    "name": "Score Counter",
-                    "description": "Numeric display showing current score in top-right",
-                    "primary_color": "white",
-                    "secondary_color": "yellow",
-                    "style": "toon",
-                    "shader": "unlit",
-                    "texture": "flat-color",
-                    "font": "cartoon",
-                },
-                {
-                    "name": "Pause Button",
-                    "description": "Blue rectangular pause button in top-left corner",
-                    "primary_color": "blue",
-                    "secondary_color": "white",
-                    "style": "toon",
-                    "shader": "unlit",
-                    "texture": "flat-color",
-                    "font": None,
-                },
-            ],
-            "background": {
-                "description": "Subway tunnel with brown stone blocks and warm lighting"
-            },
-        }
-
         # Create multiple mock analyses for different time frames
         mock_analyses = []
         time_frames = sorted(frames_dir.glob("*_time.png"))[
@@ -634,6 +581,100 @@ async def _analyze_session(session_path: Path) -> List[Dict[str, Any]]:
         raise
 
 
+# ---------------------------------------------------------------------------
+#  Asset Segmentation Helper
+# ---------------------------------------------------------------------------
+
+
+async def _segment_assets(
+    session_path: Path, scene_analyses: List[Dict[str, Any]]
+) -> None:
+    """Run SAM-2 batch jobs to cut out each unique asset across *_time.png frames.*"""
+
+    console = Console()
+    frames_dir: Path = session_path / "frames"
+
+    time_images: List[Path] = sorted(frames_dir.glob("*_time.png"))
+    if not time_images:
+        console.print("⚠️  No *_time.png images found – skipping asset segmentation")
+        return
+
+    # Collect unique asset names (case-insensitive deduplication, keep original case of first seen)
+    asset_name_map: Dict[str, str] = {}
+    for analysis in scene_analyses:
+        for asset in analysis.get("assets", []):
+            name: str = asset.get("name", "").strip()
+            if name and name.lower() not in asset_name_map:
+                asset_name_map[name.lower()] = name
+
+    if not asset_name_map:
+        console.print("ℹ️  No assets detected in scene analyses – nothing to segment")
+        return
+
+    asset_names: List[str] = sorted(asset_name_map.values())
+
+    console.print(f"✂️   Starting segmentation for {len(asset_names)} asset(s)")
+
+    # Create semaphore to throttle concurrent Sieve requests
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_SEGMENTATION)
+
+    async def _segment_single(asset_name: str) -> Tuple[str, Exception | None]:
+        """Segment all *_time.png frames for a single asset, returning any exception."""
+        asset_dir: Path = (
+            session_path
+            / "analysis"
+            / "segmented_assets"
+            / sanitize_path_component(asset_name)
+        )
+        asset_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            async with semaphore:
+                await cut_objects_batch(
+                    image_paths=[str(p) for p in time_images],
+                    text_prompt=asset_name,
+                    output_dir=str(asset_dir),
+                )
+            return asset_name, None
+        except Exception as exc:  # noqa: BLE001
+            return asset_name, exc
+
+    # Run all asset segmentations concurrently with progress tracking
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[bold magenta]Cutting assets..."),
+        MofNCompleteColumn(),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeElapsedColumn(),
+        console=console,
+        transient=False,
+    ) as progress:
+        task_id: TaskID = progress.add_task(
+            "Asset Segmentation", total=len(asset_names)
+        )
+
+        async def _wrapper(name: str):
+            result = await _segment_single(name)
+            progress.update(task_id, advance=1)
+            return result
+
+        results: List[Tuple[str, Exception | None]] = await asyncio.gather(
+            *[_wrapper(name) for name in asset_names]
+        )
+
+    # Report failures, if any
+    failures = [(name, err) for name, err in results if err is not None]
+    if failures:
+        console.print("❌  Some asset segmentations failed:")
+        for name, err in failures:
+            console.print(f"    • {name}: {type(err).__name__}: {err}")
+    else:
+        console.print("✅  Asset segmentation complete for all assets")
+
+    # Nothing returned – segmentation side-effects are on disk
+
+
 # ---------------------------------------------------------------
 #  CLI FUNCTIONS
 # ---------------------------------------------------------------
@@ -700,57 +741,42 @@ async def _async_main(session_path: Path) -> None:
     analyses = await _analyze_session(session_path)
     _write_output(session_path, analyses)
 
-    # Phase 2: Action Analysis (new functionality)
-    console.print("\n🎯  Phase 2: Action Analysis")
-    action_analyses = await _analyze_session_actions(session_path, analyses)
+    # Phase 2: Action Analysis + Asset Segmentation (concurrent)
+    console.print("\n🎯  Phase 2: Action Analysis + Asset Segmentation")
+
+    task_actions = asyncio.create_task(_analyze_session_actions(session_path, analyses))
+    task_segmentation = asyncio.create_task(_segment_assets(session_path, analyses))
+
+    # Wait for both tasks to finish, capturing any exceptions individually
+    action_result, segmentation_result = await asyncio.gather(
+        task_actions, task_segmentation, return_exceptions=True
+    )
+
+    # Handle potential exceptions from either concurrent task
+    if isinstance(segmentation_result, Exception):
+        console.print(
+            f"❌  Asset segmentation encountered an error: {segmentation_result}"
+        )
+
+    if isinstance(action_result, Exception):
+        console.print(f"❌  Action analysis encountered an error: {action_result}")
+        raise action_result  # Re-raise so CLI exits with error
+
+    action_analyses: List[Dict[str, Any]] = action_result  # type: ignore[assignment]
+
     if action_analyses:
         _write_action_output(session_path, action_analyses)
 
     console.print("\n✅  All analysis complete!")
 
 
-def main(argv: Sequence[str] | None = None) -> None:  # noqa: D401
-    console = Console()
-    parser = argparse.ArgumentParser(description="Run LLM-based frame analysis.")
-    parser.add_argument(
-        "session_dir",
-        nargs="?",
-        help="Path to a <game>/<session> directory (interactive if omitted)",
-    )
-    args = parser.parse_args(argv)
-
-    if args.session_dir:
-        session_path = Path(args.session_dir)
-        if not session_path.exists():
-            console.print(f"❌  Path does not exist: {session_path}", style="red")
-            sys.exit(1)
-    else:
-        session_path = _choose_game_and_session(Path("data"))
-
-    try:
-        asyncio.run(_async_main(session_path))
-    except KeyboardInterrupt:
-        console.print("\n⏹️  Interrupted by user.")
-
-
 if __name__ == "__main__":
-    # Quick smoke-test: run *one* find_assets call and print the JSON.
-    # This avoids the full multi-frame, multi-request workflow so we can
-    # verify credentials + connectivity first.
-
     console = Console()
-    parser = argparse.ArgumentParser(
-        description="Analyze frame pairs or run smoke-test."
-    )
+    parser = argparse.ArgumentParser(description="Analyze frame pairs.")
     parser.add_argument(
         "session_dir",
         nargs="?",
         help="Path to a <game>/<session> directory (interactive if omitted)",
-    )
-    parser.add_argument(
-        "--smoke-test",
-        action="store_true",
-        help="Run smoke test on first frame pair only",
     )
     cli_args = parser.parse_args()
 
@@ -759,29 +785,8 @@ if __name__ == "__main__":
     else:
         session_path = _choose_game_and_session(Path("data"))
 
-    if cli_args.smoke_test:
-
-        async def _smoke_test() -> None:
-            """Run the Instructor-powered Gemini call on the first two *_time.png frames."""
-
-            frames_dir = session_path / "frames"
-            try:
-                images = _load_first_two_time_images(frames_dir)
-            except RuntimeError as exc:
-                console.print(f"❌  {exc}", style="red")
-                return
-
-            # Instructor/Gemini call with retry logic
-            console.print("🔄  Running smoke test analysis...")
-            scene: SceneAnalysis = await _find_assets(images)
-
-            console.print("\n🔎  SceneAnalysis JSON:\n")
-            console.print_json(json.dumps(scene.model_dump(mode="json"), indent=2))
-
-        asyncio.run(_smoke_test())
-    else:
-        # Run full analysis workflow
-        try:
-            asyncio.run(_async_main(session_path))
-        except KeyboardInterrupt:
-            console.print("\n⏹️  Interrupted by user.")
+    # Always run the full analysis workflow
+    try:
+        asyncio.run(_async_main(session_path))
+    except KeyboardInterrupt:
+        console.print("\n⏹️  Interrupted by user.")
