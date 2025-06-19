@@ -20,7 +20,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import cv2
 import numpy as np
 
-from src.util import list_sessions, sanitize_path_component
+from src.streaming.android_streamer import sanitize_path_component
+from src.util import list_sessions
 from tqdm.auto import tqdm
 
 # Duration (in seconds) for which a touch trail remains visible.

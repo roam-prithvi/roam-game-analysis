@@ -29,7 +29,8 @@ from src import GEMINI_API_KEY
 from src.analysis.base_models import ActionAnalysis, SceneAnalysis
 from src.analysis.prompts import get_analyze_action_prompt, get_find_assets_prompt
 from src.analysis.sam2 import cut_objects_batch  # New import for asset segmentation
-from src.util import list_sessions, sanitize_path_component
+from src.streaming.android_streamer import sanitize_path_component
+from src.util import list_sessions
 from tenacity import (
     retry,
     retry_if_exception_type,

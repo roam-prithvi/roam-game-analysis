@@ -9,3 +9,7 @@ batch_bboxes/
 batch_cutouts/
 *.png
 *.jpg
+
+**/.adb_tools/
+**/*.spec
+build/
