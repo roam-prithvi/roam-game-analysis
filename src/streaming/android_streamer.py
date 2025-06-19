@@ -1,3 +1,6 @@
+# THIS FILE IS THE ENTIRETY OF THE DATA COLLECTOR APP USED BY CROWDWORKERS.
+# (build.sh to build the data collector app; it will appear in dist/ folder)
+
 import difflib  # For fuzzy name suggestions
 import fcntl
 import os
@@ -14,10 +17,13 @@ import urllib.request
 import zipfile
 from typing import Any, Callable, IO, Optional, Tuple
 
+PROD: bool = True  # Set to True for production (PyInstaller app)
 
 # --- Configuration ---
 ADB_DIR: str = os.path.expanduser(os.path.join("~", "Downloads", "adb"))
 ADB_BIN: str = "adb"  # Will be set to full path after setup
+FFMPEG_DIR: str = os.path.expanduser(os.path.join("~", "Downloads", "ffmpeg"))
+FFMPEG_BIN: str = "ffmpeg"  # Will be set to full path after setup
 
 
 def get_adb_path() -> str:
@@ -68,8 +74,82 @@ def get_adb_path() -> str:
     return adb_path
 
 
+def get_ffmpeg_path() -> str:
+    """Ensure FFmpeg is installed in ~/Downloads/ffmpeg and return its path."""
+    sys_os: str = platform.system().lower()
+    arch: str = platform.machine().lower()
+    if sys_os == "darwin":
+        # macOS universal binary (Intel/Apple Silicon)
+        url = "https://evermeet.cx/ffmpeg/getrelease/zip"
+        ffmpeg_exe = "ffmpeg"
+    elif sys_os == "windows":
+        # Windows static build (64-bit)
+        url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+        ffmpeg_exe = "ffmpeg.exe"
+    elif sys_os == "linux":
+        # Linux static build (x86_64)
+        url = "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+        ffmpeg_exe = "ffmpeg"
+    else:
+        raise RuntimeError(f"Unsupported OS for ffmpeg auto-install: {sys_os}")
+
+    ffmpeg_path: str = os.path.join(FFMPEG_DIR, ffmpeg_exe)
+    if os.path.exists(ffmpeg_path) and os.access(ffmpeg_path, os.X_OK):
+        return ffmpeg_path
+
+    # Download and extract if not present
+    os.makedirs(FFMPEG_DIR, exist_ok=True)
+    print(f"⬇️  Downloading ffmpeg static binary for {sys_os} to {FFMPEG_DIR}...")
+    if sys_os == "windows":
+        zip_path = os.path.join(FFMPEG_DIR, "ffmpeg.zip")
+        urllib.request.urlretrieve(url, zip_path)
+        print(f"📦 Extracting ffmpeg...")
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            # Find ffmpeg.exe in the archive
+            for member in zip_ref.namelist():
+                if member.endswith(ffmpeg_exe):
+                    zip_ref.extract(member, FFMPEG_DIR)
+                    src = os.path.join(FFMPEG_DIR, member)
+                    shutil.move(src, ffmpeg_path)
+                    break
+        os.remove(zip_path)
+    elif sys_os == "darwin":
+        zip_path = os.path.join(FFMPEG_DIR, "ffmpeg.zip")
+        urllib.request.urlretrieve(url, zip_path)
+        print(f"📦 Extracting ffmpeg...")
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            for member in zip_ref.namelist():
+                if member == ffmpeg_exe:
+                    zip_ref.extract(member, FFMPEG_DIR)
+                    src = os.path.join(FFMPEG_DIR, member)
+                    shutil.move(src, ffmpeg_path)
+                    break
+        os.remove(zip_path)
+        os.chmod(ffmpeg_path, 0o755)
+    elif sys_os == "linux":
+        tar_path = os.path.join(FFMPEG_DIR, "ffmpeg.tar.xz")
+        urllib.request.urlretrieve(url, tar_path)
+        print(f"📦 Extracting ffmpeg...")
+        import tarfile
+
+        with tarfile.open(tar_path, "r:xz") as tar_ref:
+            for member in tar_ref.getmembers():
+                if member.isfile() and member.name.endswith(f"/ffmpeg"):
+                    tar_ref.extract(member, FFMPEG_DIR)
+                    src = os.path.join(FFMPEG_DIR, member.name)
+                    shutil.move(src, ffmpeg_path)
+                    break
+        os.remove(tar_path)
+        os.chmod(ffmpeg_path, 0o755)
+    print(f"✅ ffmpeg installed at {ffmpeg_path}")
+    return ffmpeg_path
+
+
 # --- ADB static setup logic ---
 ADB_BIN = get_adb_path()
+
+# --- FFmpeg static setup logic ---
+FFMPEG_BIN = get_ffmpeg_path()
 
 EVENT_LOG_FILE = "touch_events.log"  # The file where raw touch events will be saved
 VIDEO_OUTPUT_FILE = "screen_recording.mp4"  # The file where video will be saved
@@ -101,6 +181,14 @@ def sanitize_path_component(component: str) -> str:
     return safe or "unnamed"
 
 
+def get_data_base_dir() -> str:
+    """Return the base directory for data storage depending on PROD flag."""
+    if PROD:
+        return os.path.expanduser(os.path.join("~", "Downloads", "data"))
+    else:
+        return "data"
+
+
 def prepare_output_paths() -> str:
     """Prompt for the current game's name and prepare the output folder tree.
 
@@ -123,9 +211,12 @@ def prepare_output_paths() -> str:
     # --- "Maybe you meant" logic -----------------------------------------
     # Look for a close existing folder name using difflib's SequenceMatcher.
     existing_games = []
-    if os.path.isdir("data"):
+    data_base_dir: str = get_data_base_dir()
+    if os.path.isdir(data_base_dir):
         existing_games = [
-            d for d in os.listdir("data") if os.path.isdir(os.path.join("data", d))
+            d
+            for d in os.listdir(data_base_dir)
+            if os.path.isdir(os.path.join(data_base_dir, d))
         ]
 
     if existing_games:
@@ -141,7 +232,7 @@ def prepare_output_paths() -> str:
             if resp == "":
                 safe_game = suggested
 
-    base_dir = os.path.join("data", safe_game)
+    base_dir = os.path.join(data_base_dir, safe_game)
     os.makedirs(base_dir, exist_ok=True)
 
     timestamp = time.strftime("%d-%m-%y_at_%H.%M.%S")
@@ -323,7 +414,9 @@ def create_coordinate_translator(
 
 def signal_handler(sig: int, frame: Any) -> None:
     """Handles Ctrl+C to gracefully shut down all subprocesses."""
-    print("\n🛑 Ctrl+C detected! Shutting down streams...")
+    print(
+        "\n🛑 Ctrl+C detected! Starting shutdown. PLEASE DO NOT CLOSE THIS WINDOW UNTIL TOLD TO DO SO."
+    )
     # Wait for a moment for processes to terminate
     time.sleep(1)
     for p in processes:
@@ -350,7 +443,7 @@ def signal_handler(sig: int, frame: Any) -> None:
         video_log_file.close()
         print("✅ Video error log file closed.")
 
-    print("✅ All streams stopped.")
+    print("✅ All streams stopped. You can now close this window.")
     sys.exit(0)
 
 
@@ -659,7 +752,7 @@ def main() -> None:
         # --- Video Stream ---
         # Build video command with proper resolution if available
         ffmpeg_base = (
-            "ffmpeg -y -use_wallclock_as_timestamps 1 -fflags +genpts "
+            f"{shlex.quote(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
             "-f h264 -i - -c copy"
         )
 
