@@ -15,5 +15,5 @@ load_dotenv(
 GEMINI_API_KEY: str = os.environ["GEMINI_API_KEY"]
 OPENAI_API_KEY: str = os.environ["OPENAI_API_KEY"]
 ANTHROPIC_API_KEY: str = os.environ["ANTHROPIC_API_KEY"]
-SAM2_API_KEY: str = os.environ["SAM2_API_KEY"]
+# SAM2_API_KEY: str = os.environ["SAM2_API_KEY"]
 SIEVE_API_KEY: str = os.environ["SIEVE_API_KEY"]
