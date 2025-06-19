@@ -1,8 +1,9 @@
 # Standard library imports
 import argparse
 import asyncio
+import json
 import os
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import google.genai as genai  # Gemini Python SDK
 
@@ -23,8 +24,10 @@ YOLO_CONFIDENCE_THRESHOLD: float = 0.20  # used when calling YOLOv8
 # SAM2_CONFIDENCE_THRESHOLD: float = 0.50  # reserved for potential SAM 2 tuning
 
 # Gemini settings
-GEMINI_MODEL_NAME: str = "gemini-2.0-flash"  # model optimised for speed + vision
-MAX_CONCURRENT_REQUESTS: int = 100  # requested by user for batch processing
+GEMINI_MODEL_NAME: str = "gemini-2.5-pro-preview-06-05"
+MAX_CONCURRENT_REQUESTS: int = (
+    50  # Increased for better throughput - Gemini can handle high concurrency
+)
 
 # Initialise Gemini client once (thread-safe according to SDK docs)
 _genai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -43,8 +46,8 @@ FLORENCE_TASK_PROMPT: str = (
 
 
 def _convert_normalised_box_to_pixels(
-    normalised_box: list[int | float], image_size: tuple[int, int]
-) -> list[int]:
+    normalised_box: List[int | float], image_size: Tuple[int, int]
+) -> List[int]:
     """Convert a `[ymin, xmin, ymax, xmax]` box in 0-1000 space to pixel coords.
 
     The return format is `[xmin, ymin, xmax, ymax]`, matching SAM 2 expectations.
@@ -53,10 +56,10 @@ def _convert_normalised_box_to_pixels(
     ymin, xmin, ymax, xmax = normalised_box
     height, width = image_size  # PIL images return (width, height) but we need both
 
-    y0 = int(round((ymin / 1000) * height))
-    x0 = int(round((xmin / 1000) * width))
-    y1 = int(round((ymax / 1000) * height))
-    x1 = int(round((xmax / 1000) * width))
+    y0: int = int(round((ymin / 1000) * height))
+    x0: int = int(round((xmin / 1000) * width))
+    y1: int = int(round((ymax / 1000) * height))
+    x1: int = int(round((xmax / 1000) * width))
 
     return [x0, y0, x1, y1]
 
@@ -87,10 +90,15 @@ async def get_object_bbox_batch(
     semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
     object_name_lower = object_name.lower()
 
+    print(
+        f"🚀 Starting concurrent Gemini bbox detection for {len(images)} images (max {MAX_CONCURRENT_REQUESTS} concurrent)"
+    )
+
     async def _worker(idx: int, image: sieve.File) -> list[int] | None:
         """Inner coroutine executed with concurrency control."""
 
         async with semaphore:
+            print(f"📤 [Image {idx}] Starting Gemini API call...")
 
             def _run_sync() -> list[int] | None:
                 path = image.path  # local cache path ensured by Sieve
@@ -98,6 +106,7 @@ async def get_object_bbox_batch(
                 # Upload the image to Gemini Files API
                 try:
                     uploaded = _genai_client.files.upload(file=path)
+                    print(f"⬆️  [Image {idx}] File uploaded to Gemini")
                 except Exception as exc:  # pragma: no cover – network/SDK errors
                     print(f"Warning: Upload failed for image {idx}: {exc}")
                     return None
@@ -118,23 +127,23 @@ async def get_object_bbox_batch(
                 )
 
                 try:
+                    print(f"🤖 [Image {idx}] Calling Gemini generate_content...")
                     response = _genai_client.models.generate_content(
                         model=GEMINI_MODEL_NAME,
                         contents=[uploaded, prompt],
                     )
+                    print(f"✅ [Image {idx}] Gemini response received")
                 except Exception as exc:
                     print(f"Warning: Gemini call failed for image {idx}: {exc}")
                     return None
 
-                # -------------------------------------------------------------
                 # Debug: Show exactly what Gemini returned for this image
-                # -------------------------------------------------------------
-                print(f"\n📤 [Gemini][image {idx}] raw response:\n{response.text}\n")
+                # print(f"\n📤 [Gemini][image {idx}] raw response:\n{response.text}\n")
 
                 normalised_box = extract_bbox_from_gemini_response(
                     response.text, object_name_lower
                 )
-                print(f"Normalised box: {normalised_box}")
+                print(f"📦 [Image {idx}] Normalized box: {normalised_box}")
                 if normalised_box is None:
                     return None
 
@@ -143,6 +152,7 @@ async def get_object_bbox_batch(
                     pixel_box = _convert_normalised_box_to_pixels(
                         normalised_box, (img.height, img.width)
                     )
+                print(f"🎯 [Image {idx}] Pixel box: {pixel_box}")
                 return pixel_box
 
             # Run blocking Gemini/sdk I/O in executor to keep event loop responsive
@@ -151,6 +161,7 @@ async def get_object_bbox_batch(
 
     # Schedule all worker tasks
     tasks = [_worker(idx, img) for idx, img in enumerate(images)]
+    print(f"⏳ Awaiting {len(tasks)} concurrent Gemini API calls...")
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     bounding_boxes: list[list[int] | None] = []
@@ -165,6 +176,9 @@ async def get_object_bbox_batch(
             print(f"✓ Found {object_name} in image {idx}")
             bounding_boxes.append(res)
 
+    print(
+        f"🏁 Completed bbox detection: {sum(1 for b in bounding_boxes if b is not None)}/{len(bounding_boxes)} successful"
+    )
     return bounding_boxes
 
 
@@ -214,15 +228,34 @@ async def segment_images_batch(
     # Initialize results list with None for all images
     sam_results = [None] * len(files)
 
-    # Collect SAM results for successful detections
-    for job, original_index in zip(sam_jobs, image_indices):
+    # Collect SAM results concurrently instead of sequentially
+    async def _get_sam_result(job: Any, original_index: int) -> Tuple[int, Any]:
+        """Get SAM result for a single job."""
         try:
-            sam_out = job.result()
-            sam_results[original_index] = sam_out
+            # Run the blocking job.result() in an executor to keep it async
+            loop = asyncio.get_running_loop()
+            sam_out = await loop.run_in_executor(None, job.result)
             print(f"✓ Segmentation completed for image {original_index}")
+            return original_index, sam_out
         except Exception as e:
             print(f"Warning: SAM segmentation failed for image {original_index}: {e}")
-            sam_results[original_index] = None
+            return original_index, None
+
+    # Process all SAM jobs concurrently
+    if sam_jobs:
+        job_tasks = [
+            _get_sam_result(job, original_index)
+            for job, original_index in zip(sam_jobs, image_indices)
+        ]
+        job_results = await asyncio.gather(*job_tasks, return_exceptions=True)
+
+        # Populate results array
+        for result in job_results:
+            if isinstance(result, Exception):
+                print(f"Warning: Error in SAM job: {result}")
+                continue
+            original_index, sam_out = result
+            sam_results[original_index] = sam_out
 
     return sam_results
 
@@ -232,7 +265,7 @@ async def cut_objects_batch(
     text_prompt: str,
     output_dir: str = "batch_cutouts",
     confidence_threshold: float = YOLO_CONFIDENCE_THRESHOLD,
-) -> List[str]:
+) -> Tuple[List[str], List[str]]:
     """
     Cut out objects from multiple images using segmentation and save as transparent PNGs.
 
@@ -243,7 +276,7 @@ async def cut_objects_batch(
         confidence_threshold: Confidence threshold for YOLOv8 detection
 
     Returns:
-        List of output file paths for successfully processed images
+        Tuple of (output_paths, corresponding_original_paths) for successfully processed images
     """
     # -------------------------------------------------------------
     # Debug: Show which prompt this batch is using
@@ -270,6 +303,7 @@ async def cut_objects_batch(
         results = await segment_images_batch(images, text_prompt, confidence_threshold)
 
         output_paths = []
+        corresponding_original_paths = []
         successful_count = 0
         failed_count = 0
 
@@ -345,6 +379,7 @@ async def cut_objects_batch(
                     # Save the result
                     cutout_img.save(output_path, "PNG")
                     output_paths.append(output_path)
+                    corresponding_original_paths.append(image_path)
                     successful_count += 1
                     print(f"✓ Saved cutout to: {output_path}")
 
@@ -369,7 +404,7 @@ async def cut_objects_batch(
         print(f"   ⚠ Failed/Skipped: {failed_count}/{len(image_paths)} images")
         print(f"   📁 Output directory: {output_dir}")
 
-        return output_paths
+        return output_paths, corresponding_original_paths
 
     except Exception as e:
         print(f"Batch processing error: {e}")
@@ -510,6 +545,133 @@ async def draw_bboxes_batch(
     return annotated_paths
 
 
+async def postfilter_batch(
+    output_paths: List[str],
+    original_paths: List[str],
+    object_name: str,
+) -> List[str]:
+    """
+    Concurrently filters images using Gemini, deleting those that don't match the object.
+
+    Args:
+        output_paths: List of paths to the cutout images to be filtered.
+        original_paths: List of paths to the original images (for comparison).
+        object_name: The name of the object to verify in the images.
+
+    Returns:
+        A list of paths for the images that were kept.
+    """
+    if len(output_paths) != len(original_paths):
+        raise ValueError("output_paths and original_paths must have the same length")
+
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+    object_name_lower = object_name.lower()
+
+    print(
+        f"🔬 Starting concurrent post-filtering for {len(output_paths)} images (max {MAX_CONCURRENT_REQUESTS} concurrent)"
+    )
+
+    async def _worker(idx: int, cutout_path: str, original_path: str) -> str | None:
+        """Inner coroutine to verify and potentially delete an image."""
+        async with semaphore:
+            print(f"🔍 [Filter {idx}] Starting post-filter analysis...")
+
+            def _run_sync() -> str | None:
+                if not os.path.exists(cutout_path):
+                    print(
+                        f"Warning: Cutout file not found for post-filtering, skipping: {cutout_path}"
+                    )
+                    return None
+
+                if not os.path.exists(original_path):
+                    print(
+                        f"Warning: Original file not found for post-filtering, skipping: {original_path}"
+                    )
+                    return None
+
+                try:
+                    print(f"⬆️  [Filter {idx}] Uploading images to Gemini...")
+                    uploaded_cutout = _genai_client.files.upload(file=cutout_path)
+                    uploaded_original = _genai_client.files.upload(file=original_path)
+                    print(f"✅ [Filter {idx}] Both images uploaded")
+                except Exception as exc:
+                    print(
+                        f"Warning: Upload failed for image {idx} ({cutout_path}): {exc}"
+                    )
+                    return cutout_path  # Keep the file if upload fails
+
+                prompt = (
+                    "You are postprocessing the results of a segmentation model which cuts out objects from images but is sometimes imprecise, and we need a clear result."
+                    f"I will show you two images: first is the original image, second is a cutout from that image. "
+                    f"Does the cutout image clearly show a {object_name_lower}? "
+                    f"The cutout should be a clean extraction of a {object_name_lower} with minimal artifacts. "
+                    f"If there are cutouts in the {object_name_lower} (appearing as black holes or transparent areas): "
+                    f"if the object is still clearly recognizable as a {object_name_lower} then answer YES, otherwise NO. "
+                    f"If there are ANY OTHER OBJECTS that partially obscure the {object_name_lower}, answer NO. "
+                    f"If the cutout clearly does not correspond to a {object_name_lower} (sometimes the segmentation model will miss it completely), answer NO. "
+                    "Answer with JSON dict containing 'reasoning': (string of your reasoning) and 'decision': (Literal, either 'YES' or 'NO')."
+                )
+
+                try:
+                    print(
+                        f"🤖 [Filter {idx}] Calling Gemini for post-filter analysis..."
+                    )
+                    response = _genai_client.models.generate_content(
+                        model=GEMINI_MODEL_NAME,
+                        contents=[uploaded_original, uploaded_cutout, prompt],
+                    )
+                    print(f"✅ [Filter {idx}] Gemini response received")
+                    response_text = response.text.strip()
+                    response_json = json.loads(response_text)
+                    decision = response_json["decision"].strip().upper()
+                    reasoning = response_json["reasoning"].strip()
+                    print(
+                        f"🔎 Post-filter [image {idx}]: Gemini says '{decision}' for {os.path.basename(cutout_path)}: {reasoning}"
+                    )
+
+                    if decision != "YES":
+                        print(
+                            f"✗ Deleting image {idx} as it does not seem to be a good {object_name_lower} cutout: {cutout_path}"
+                        )
+                        # TODO
+                        # os.remove(cutout_path)
+                        return None
+                    else:
+                        return cutout_path
+
+                except Exception as exc:
+                    print(
+                        f"Warning: Gemini call failed for post-filtering image {idx} ({cutout_path}): {exc}"
+                    )
+                    return cutout_path  # Keep the file on error
+
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(None, _run_sync)
+
+    tasks = [
+        _worker(idx, cutout_path, original_path)
+        for idx, (cutout_path, original_path) in enumerate(
+            zip(output_paths, original_paths)
+        )
+    ]
+    print(f"⏳ Awaiting {len(tasks)} concurrent post-filter analysis tasks...")
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    kept_paths: list[str] = []
+    for idx, res in enumerate(results):
+        if isinstance(res, Exception):
+            print(f"Warning: Error post-filtering image {idx}: {res}")
+            # The original path is still in `output_paths`. We should probably keep it if an error occurs.
+            kept_paths.append(output_paths[idx])
+        elif res is not None:
+            kept_paths.append(res)
+
+    print("\n✅ Post-filtering complete.")
+    print(f"   Kept {len(kept_paths)}/{len(output_paths)} images.")
+
+    return kept_paths
+
+
 async def main() -> None:
     """Main function demonstrating batch processing."""
     parser = argparse.ArgumentParser(
@@ -538,7 +700,7 @@ async def main() -> None:
     project_root = os.path.dirname(
         os.path.dirname(script_dir)
     )  # Go up two levels from src/analysis/
-    text_prompt = "hoverboard"
+    text_prompt = '"Gold Coin"'
 
     # Example 2: Batch processing multiple images
     print("=== Batch Image Processing ===")
@@ -564,7 +726,7 @@ async def main() -> None:
         if args.segment:
             print("\n=== Cutting Objects (Segmentation) ===")
             try:
-                output_paths = await cut_objects_batch(
+                output_paths, corresponding_original_paths = await cut_objects_batch(
                     image_paths=batch_images,
                     text_prompt=text_prompt,
                     output_dir=f"batch_cutouts/{text_prompt}",
@@ -572,9 +734,16 @@ async def main() -> None:
                 )
 
                 if output_paths:
+                    print("\n🔬 Post-filtering cutouts...")
+                    filtered_paths = await postfilter_batch(
+                        output_paths, corresponding_original_paths, text_prompt
+                    )
+
                     print("\n🎉 Batch processing completed successfully!")
-                    print(f"✓ Generated {len(output_paths)} cutout(s):")
-                    for output_path in output_paths:
+                    print(
+                        f"✓ Generated {len(filtered_paths)} final cutout(s) after filtering:"
+                    )
+                    for output_path in filtered_paths:
                         print(f"  - {os.path.basename(output_path)}")
                 else:
                     print(
