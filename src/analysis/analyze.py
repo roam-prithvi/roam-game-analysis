@@ -630,7 +630,7 @@ async def _segment_assets(
 
         try:
             async with semaphore:
-                await cut_objects_batch(
+                _output_paths, _original_paths = await cut_objects_batch(
                     image_paths=[str(p) for p in time_images],
                     text_prompt=asset_name,
                     output_dir=str(asset_dir),
@@ -695,11 +695,9 @@ def _choose_game_and_session(base_data_dir: Path) -> Path:
 
     from datetime import datetime
 
-    # TODO
-    game_name: str = "subway surfers"
-    # game_name: str = input("🎮  Enter the game name: ").strip()
-    # while not game_name:
-    #     game_name = input("Please enter a non-empty game name: ").strip()
+    game_name: str = input("🎮  Enter the game name to analyze: ").strip()
+    while not game_name:
+        game_name = input("Please enter a non-empty game name: ").strip()
 
     game_dir: Path = base_data_dir / sanitize_path_component(game_name)
     if not game_dir.exists():
