@@ -8,7 +8,8 @@ import cv2
 
 # Re-use the robust log parser already defined in the visualisation helper
 from src.processing.visualize import parse_touch_log
-from src.util import list_sessions, sanitize_path_component
+from src.streaming.android_streamer import sanitize_path_component
+from src.util import list_sessions
 from tqdm.auto import tqdm
 
 # ---------------------------------------------------------------------------

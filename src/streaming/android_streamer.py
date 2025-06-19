@@ -1,21 +1,76 @@
 import difflib  # For fuzzy name suggestions
 import fcntl
 import os
+import platform
 import re
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
 import threading  # New: for monitoring FFmpeg stderr asynchronously
 import time
+import urllib.request
+import zipfile
 from typing import Any, Callable, IO, Optional, Tuple
 
-from src.util import sanitize_path_component  # ➕ typing imports
 
 # --- Configuration ---
-# TODO: if adb not in PATH, try to find it, then download it, then add it to PATH and set ADB_PATH to the full path
-# if adb in path, set ADB_PATH to "adb"
-ADB_PATH = "adb"  # Or provide a full path if 'adb' is not in your system's PATH
+ADB_DIR: str = os.path.expanduser(os.path.join("~", "Downloads", "adb"))
+ADB_BIN: str = "adb"  # Will be set to full path after setup
+
+
+def get_adb_path() -> str:
+    """Ensure ADB is installed in ~/Downloads/adb and return its path."""
+    sys_os: str = platform.system().lower()
+    if sys_os == "darwin":
+        url = (
+            "https://dl.google.com/android/repository/platform-tools-latest-darwin.zip"
+        )
+        adb_exe = "adb"
+    elif sys_os == "windows":
+        url = (
+            "https://dl.google.com/android/repository/platform-tools-latest-windows.zip"
+        )
+        adb_exe = "adb.exe"
+    elif sys_os == "linux":
+        url = "https://dl.google.com/android/repository/platform-tools-latest-linux.zip"
+        adb_exe = "adb"
+    else:
+        raise RuntimeError(f"Unsupported OS for adb auto-install: {sys_os}")
+
+    adb_path: str = os.path.join(ADB_DIR, adb_exe)
+    if os.path.exists(adb_path) and os.access(adb_path, os.X_OK):
+        return adb_path
+
+    # Download and extract if not present
+    os.makedirs(ADB_DIR, exist_ok=True)
+    zip_path: str = os.path.join(ADB_DIR, "platform-tools.zip")
+    print(
+        f"⬇️  Downloading adb platform-tools for {sys_os} to {zip_path} (This is necessary for your computer to communicate with the connected Android device)..."
+    )
+    urllib.request.urlretrieve(url, zip_path)
+    print(f"📦 Extracting platform-tools...")
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
+        zip_ref.extractall(ADB_DIR)
+    # Move adb binary to ADB_DIR
+    extracted_dir = os.path.join(ADB_DIR, "platform-tools")
+    extracted_adb = os.path.join(extracted_dir, adb_exe)
+    if not os.path.exists(extracted_adb):
+        raise RuntimeError(f"adb binary not found after extraction: {extracted_adb}")
+    shutil.move(extracted_adb, adb_path)
+    # Clean up extracted folder and zip
+    shutil.rmtree(extracted_dir)
+    os.remove(zip_path)
+    if sys_os != "windows":
+        os.chmod(adb_path, 0o755)
+    print(f"✅ adb installed at {adb_path}")
+    return adb_path
+
+
+# --- ADB static setup logic ---
+ADB_BIN = get_adb_path()
+
 EVENT_LOG_FILE = "touch_events.log"  # The file where raw touch events will be saved
 VIDEO_OUTPUT_FILE = "screen_recording.mp4"  # The file where video will be saved
 VIDEO_ERROR_LOG_FILE = (
@@ -34,6 +89,16 @@ stream_start_time = None  # When video recording subprocess is launched
 first_tap_time = None  # When first touch event is processed
 first_video_frame_time = None  # When video file is first modified (first frame written)
 video_frame_detected = False  # Flag to track if first video frame has been detected
+
+
+# ATTENTION: NOT in util.py because pyinstaller doesn't like it when we import from another file
+def sanitize_path_component(component: str) -> str:
+    """Return a filesystem-safe version of *component*."""
+    # Keep letters, numbers, underscore, hyphen and space; drop the rest.
+    safe = re.sub(r"[^A-Za-z0-9 _\-]", "", component).strip()
+    # Compress whitespace to single spaces.
+    safe = re.sub(r"\s+", " ", safe)
+    return safe or "unnamed"
 
 
 def prepare_output_paths() -> str:
@@ -101,10 +166,10 @@ def find_touchscreen_device() -> str:
     to find a device that has 'touchscreen' in its name and supports
     multi-touch X and Y absolute events.
     """
-    print("🔎 Searching for touchscreen device...")
+    print("🔎 Searching for touchscreen Android device...")
     try:
         # Run the adb command to list input devices
-        command = f"{ADB_PATH} shell getevent -lp"
+        command = f"{ADB_BIN} shell getevent -lp"
         result = subprocess.run(
             shlex.split(command), capture_output=True, text=True, check=True
         )
@@ -132,21 +197,23 @@ def find_touchscreen_device() -> str:
                     match = re.search(r"\d+:\s*(/dev/input/event\d+)", first_line)
                     if match:
                         device_path = match.group(1)
-                        print(f"✅ Found touchscreen: {device_path}")
+                        print(f"✅ Found touchscreen Android device: {device_path}")
                         return device_path
 
     except FileNotFoundError:
         print(
-            f"❌ Error: '{ADB_PATH}' command not found. Is ADB installed and in your PATH?"
+            f"❌ Error: '{ADB_BIN}' command not found. Ensure there is the 'adb' folder in your Downloads folder. If not, rerun this app."
         )
         sys.exit(1)
     except subprocess.CalledProcessError as e:
         print(
-            f"❌ Error executing ADB command: {e}\nIs your device connected and authorized?"
+            f"❌ Error executing ADB command: {e}"
+            "❌Is your Android phone connected and authorized? See guide at: https://www.notion.so/Instructions-for-Data-Collectors-217eefc8733380268679c3597593c3c9"
+            "❌Connect your Android phone to your computer via USB first, then launch this app on your computer!"
         )
         sys.exit(1)
 
-    print("❌ Error: Could not find a suitable touchscreen device.")
+    print("❌ Error: Could not find a suitable touchscreen Android device.")
     sys.exit(1)
 
 
@@ -154,7 +221,7 @@ def get_screen_size() -> Tuple[Optional[int], Optional[int]]:
     """Gets the physical screen size (resolution) of the device."""
     print("📏 Getting screen size...")
     try:
-        command = f"{ADB_PATH} shell wm size"
+        command = f"{ADB_BIN} shell wm size"
         result = subprocess.run(
             shlex.split(command), capture_output=True, text=True, check=True
         )
@@ -185,7 +252,7 @@ def get_input_device_ranges(
     """
     print(f"📐 Getting coordinate ranges for {device_path}...")
     try:
-        command = f"{ADB_PATH} shell getevent -lp {device_path}"
+        command = f"{ADB_BIN} shell getevent -lp {device_path}"
         result = subprocess.run(
             shlex.split(command), capture_output=True, text=True, check=True
         )
@@ -544,6 +611,11 @@ def main() -> None:
     # Set up the Ctrl+C handler
     signal.signal(signal.SIGINT, signal_handler)
 
+    print("\n=========================================================")
+    print("🤗 Welcome to the Game Data Collector! 🤗")
+    print("=========================================================")
+    print("")
+
     # 🆕 Prepare game-specific output paths ------------------------------------
     prepare_output_paths()
 
@@ -558,7 +630,7 @@ def main() -> None:
     )
 
     # 3. Start event stream but wait for first touch to start video
-    event_command = shlex.split(f"{ADB_PATH} shell getevent -lt {touch_device}")
+    event_command = shlex.split(f"{ADB_BIN} shell getevent -lt {touch_device}")
     event_process = subprocess.Popen(
         event_command,
         stdout=subprocess.PIPE,
@@ -567,7 +639,9 @@ def main() -> None:
         bufsize=1,
     )
     processes.append(event_process)
-    print(f"🕒 Waiting for the first touch event to start recording...")
+    print(
+        f"🕒 Touch your Android phone screen to start recording. Waiting for the touch..."
+    )
 
     video_process = None
 
@@ -594,13 +668,13 @@ def main() -> None:
 
         if screen_width and screen_height:
             video_command = (
-                f"{ADB_PATH} shell screenrecord --size {screen_width}x{screen_height} "
+                f"{ADB_BIN} shell screenrecord --size {screen_width}x{screen_height} "
                 f"--output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
             )
             print(f"🎥 Recording at {screen_width}x{screen_height} resolution")
         else:
             video_command = (
-                f"{ADB_PATH} shell screenrecord --output-format=h264 - "
+                f"{ADB_BIN} shell screenrecord --output-format=h264 - "
                 f"| {ffmpeg_base} {quoted_output_file}"
             )
             print("🎥 Recording at default resolution")
@@ -662,7 +736,9 @@ def main() -> None:
     fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
     print("\n=========================================================")
-    print(">>> Analysis session is running. Press Ctrl+C to stop. <<<")
+    print(
+        ">>> Recording session successfully started! Press Ctrl+C in this window to stop. <<<"
+    )
     print("=========================================================")
 
     # 4. Main event processing loop with video frame monitoring

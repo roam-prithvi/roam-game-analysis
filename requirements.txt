@@ -78,7 +78,6 @@ orjson==3.10.18
 packaging==24.2
 pandas==2.3.0
 parso==0.8.4
-pathlib==1.0.1
 pathspec==0.12.1
 pexpect==4.9.0
 pillow==11.2.1
