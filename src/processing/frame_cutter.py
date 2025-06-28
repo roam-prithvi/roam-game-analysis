@@ -117,8 +117,10 @@ def process_directory(directory: str | Path) -> None:
     """Extract still frames for *directory* according to the strategy above.
 
     The folder must contain:
-        • ``screen_recording_overlay.mp4`` – the annotated recording
-        • ``touch_events.log``              – processed touch-event log
+        • ``screen_recording.mp4``      – the raw recording
+        • ``touch_events.log``          – processed touch-event log
+
+    It will use ``screen_recording_overlay.mp4`` if present.
 
     A new sub-folder named ``frames`` will be (re)created inside *directory*
     containing all exported ``.png`` files.
@@ -126,17 +128,19 @@ def process_directory(directory: str | Path) -> None:
 
     dir_path: Path = Path(directory)
 
-    video_overlay: Path = dir_path / "screen_recording_overlay.mp4"
     video_raw: Path = dir_path / "screen_recording.mp4"
+    video_overlay: Path = dir_path / "screen_recording_overlay.mp4"
     log_file: Path = dir_path / "touch_events.log"
     out_dir: Path = dir_path / "frames"
 
-    if not video_overlay.exists():
-        raise FileNotFoundError(f"⚠️  {video_overlay} not found.")
     if not video_raw.exists():
         raise FileNotFoundError(f"⚠️  {video_raw} not found.")
     if not log_file.exists():
         raise FileNotFoundError(f"⚠️  {log_file} not found.")
+
+    has_overlay = video_overlay.exists()
+    if not has_overlay:
+        print("⚠️  Overlay video not found. Using raw video for all frames.")
 
     # Fresh output folder ----------------------------------------------------
     if out_dir.exists():
@@ -144,17 +148,20 @@ def process_directory(directory: str | Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # --- Analyse the video --------------------------------------------------
-    cap_overlay = cv2.VideoCapture(str(video_overlay))
     cap_raw = cv2.VideoCapture(str(video_raw))
-    if not cap_overlay.isOpened():
-        raise RuntimeError(f"❌ Could not open overlay video: {video_overlay}")
     if not cap_raw.isOpened():
         raise RuntimeError(f"❌ Could not open raw video: {video_raw}")
+    
+    video_for_overlay_frames = video_overlay if has_overlay else video_raw
+    cap_overlay = cv2.VideoCapture(str(video_for_overlay_frames))
+    if not cap_overlay.isOpened():
+         # This case should ideally not happen if video_raw exists
+        raise RuntimeError(f"❌ Could not open video for overlay frames: {video_for_overlay_frames}")
 
-    fps: float = cap_overlay.get(cv2.CAP_PROP_FPS)
-    if fps <= 1.0:  # Fallback but overlay output *should* be CFR
+    fps: float = cap_raw.get(cv2.CAP_PROP_FPS)
+    if fps <= 1.0:  # Fallback
         fps = 30.0
-    n_frames: int = int(cap_overlay.get(cv2.CAP_PROP_FRAME_COUNT))
+    n_frames: int = int(cap_raw.get(cv2.CAP_PROP_FRAME_COUNT))
     duration: float = n_frames / fps if fps > 0 else 0.0
 
     print(f"🎬  Video: {n_frames} frames @ {fps:.3f} fps – {duration:.2f} s")
@@ -175,10 +182,15 @@ def process_directory(directory: str | Path) -> None:
     frame_idx = 0
     saved = 0
     while True:
-        ok_o, frame_o = cap_overlay.read()
         ok_r, frame_r = cap_raw.read()
-        if not ok_o or not ok_r:
+        if not ok_r:
             break
+
+        frame_o = frame_r  # Default to raw
+        if has_overlay:
+            ok_o, frame_o_maybe = cap_overlay.read()
+            if ok_o:
+                frame_o = frame_o_maybe
 
         if frame_idx in schedule:
             filename = schedule[frame_idx]

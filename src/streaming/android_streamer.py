@@ -274,22 +274,32 @@ def find_touchscreen_device() -> str:
                 continue
 
             # Check for the required characteristics
-            is_touchscreen = "touchscreen" in block.lower()
+            # Earlier versions looked only for the literal word "touchscreen" in the
+            # device description.  Many devices label their panel differently
+            # (e.g. "ft5x06_ts", "synaptics_dsx", etc.) so here we match any device
+            # whose *name* string contains the word "touch" irrespective of the
+            # surrounding characters.
+            name_match = re.search(r"name:\s*\"([^\"]+)\"", block, re.IGNORECASE)
+            is_touchscreen = False
+            if name_match:
+                dev_name = name_match.group(1).lower()
+                is_touchscreen = "touch" in dev_name  # e.g. touchpanel, ft5x06_ts
+
             has_abs_mt_x = "ABS_MT_POSITION_X" in block
             has_abs_mt_y = "ABS_MT_POSITION_Y" in block
 
-            if is_touchscreen and has_abs_mt_x and has_abs_mt_y:
-                # Extract the device path from the first line of the block
-                # Format is typically: " 7: /dev/input/event11"
-                lines = block.strip().split("\n")
-                if lines:
-                    first_line = lines[0].strip()
-                    # Look for the pattern "number: /dev/input/eventX"
-                    match = re.search(r"\d+:\s*(/dev/input/event\d+)", first_line)
-                    if match:
-                        device_path = match.group(1)
-                        print(f"✅ Found touchscreen Android device: {device_path}")
-                        return device_path
+            # Consider the device a touchscreen if it either (a) passed the
+            # name-based "touch" heuristic *or* (b) declares itself as a DIRECT
+            # input device (common for touch panels).  We still require the
+            # multi-touch ABS axes so we don't accidentally pick up e.g. a trackpad.
+            if has_abs_mt_x and has_abs_mt_y and (is_touchscreen or "INPUT_PROP_DIRECT" in block):
+                # Look for the first occurrence of "/dev/input/eventX" anywhere in
+                # the device block instead of relying solely on the first line.
+                match = re.search(r"(/dev/input/event\d+)", block)
+                if match:
+                    device_path = match.group(1)
+                    print(f"✅ Found touchscreen Android device: {device_path}")
+                    return device_path
 
     except FileNotFoundError:
         print(

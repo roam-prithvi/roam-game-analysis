@@ -13,3 +13,5 @@ batch_cutouts/
 **/.adb_tools/
 **/*.spec
 build/
+
+venv

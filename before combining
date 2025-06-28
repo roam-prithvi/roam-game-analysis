@@ -1,0 +1,319 @@
+Tree combined: 
+{
+  "$type": "Roam.BehaviourSystem.BTNodeDataComposite, Assembly-CSharp",
+  "abortType": 1,
+  "children": {
+    "$type": "Roam.BehaviourSystem.BTNodeData[], Assembly-CSharp",
+    "$values": [
+      {
+        "$type": "Roam.BehaviourSystem.BTNodeDataComposite, Assembly-CSharp",
+        "abortType": 0,
+        "children": {
+          "$type": "Roam.BehaviourSystem.BTNodeData[], Assembly-CSharp",
+          "$values": [
+            {
+              "$type": "Roam.BehaviourSystem.BTNodeDataConditional, Assembly-CSharp",
+              "fieldsData": {
+                "$type": "Roam.BehaviourSystem.BTProcessedFieldData[], Assembly-CSharp",
+                "$values": [
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "minRange",
+                    "value": 0.0
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "maxRange",
+                    "value": 2.0
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "layerMask",
+                    "value": -1
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "allObjectsInRange",
+                    "value": {
+                      "identifier": "ObjectsTooCloseList",
+                      "value": {
+                        "$type": "System.Collections.Generic.List`1[[UnityEngine.Transform, UnityEngine.CoreModule]], mscorlib",
+                        "$values": []
+                      }
+                    }
+                  }
+                ]
+              },
+              "friendlyName": "1.1.1 - BTConditionalInRange",
+              "type": "Roam.BehaviourSystem.BTConditionalInRange, Assembly-CSharp"
+            },
+            {
+              "$type": "Roam.BehaviourSystem.BTNodeDataDecorator, Assembly-CSharp",
+              "child": {
+                "$type": "Roam.BehaviourSystem.BTNodeDataAction, Assembly-CSharp",
+                "fieldsData": {
+                  "$type": "Roam.BehaviourSystem.BTProcessedFieldData[], Assembly-CSharp",
+                  "$values": [
+                    {
+                      "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                      "fieldName": "target",
+                      "value": {
+                        "identifier": "ClosestObjectToMoveAwayFrom",
+                        "value": "none"
+                      }
+                    },
+                    {
+                      "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                      "fieldName": "speed",
+                      "value": 5.0
+                    },
+                    {
+                      "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                      "fieldName": "stoppingDistance",
+                      "value": 10.0
+                    },
+                    {
+                      "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                      "fieldName": "runTillTargetIsReached",
+                      "value": false
+                    }
+                  ]
+                },
+                "friendlyName": "1.1.2.1 - BTActionMoveAway",
+                "type": "Roam.BehaviourSystem.BTActionMoveAway, Assembly-CSharp"
+              },
+              "fieldsData": {
+                "$type": "Roam.BehaviourSystem.BTProcessedFieldData[], Assembly-CSharp",
+                "$values": [
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "transformList",
+                    "value": {
+                      "identifier": "ObjectsTooCloseList",
+                      "value": null
+                    }
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "index",
+                    "value": 0
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "element",
+                    "value": {
+                      "identifier": "ClosestObjectToMoveAwayFrom",
+                      "value": "none"
+                    }
+                  }
+                ]
+              },
+              "friendlyName": "1.1.2 - BTForArrayElement",
+              "type": "Roam.BehaviourSystem.BTForArrayElement, Assembly-CSharp"
+            }
+          ]
+        },
+        "friendlyName": "1.1 - Sequence",
+        "type": "BehaviorDesigner.Runtime.Tasks.Sequence, BehaviorDesigner.Runtime"
+      },
+      {
+        "$type": "Roam.BehaviourSystem.BTNodeDataComposite, Assembly-CSharp",
+        "abortType": 0,
+        "children": {
+          "$type": "Roam.BehaviourSystem.BTNodeData[], Assembly-CSharp",
+          "$values": [
+            {
+              "$type": "Roam.BehaviourSystem.BTNodeDataConditional, Assembly-CSharp",
+              "fieldsData": {
+                "$type": "Roam.BehaviourSystem.BTProcessedFieldData[], Assembly-CSharp",
+                "$values": [
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "minRange",
+                    "value": 5.0
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "maxRange",
+                    "value": 8.0
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "layerMask",
+                    "value": -1
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "allObjectsInRange",
+                    "value": {
+                      "identifier": "ObjectsOptimalRangeList",
+                      "value": {
+                        "$type": "System.Collections.Generic.List`1[[UnityEngine.Transform, UnityEngine.CoreModule]], mscorlib",
+                        "$values": []
+                      }
+                    }
+                  }
+                ]
+              },
+              "friendlyName": "1.2.1 - BTConditionalInRange",
+              "type": "Roam.BehaviourSystem.BTConditionalInRange, Assembly-CSharp"
+            },
+            {
+              "$type": "Roam.BehaviourSystem.BTNodeDataDecorator, Assembly-CSharp",
+              "child": {
+                "$type": "Roam.BehaviourSystem.BTNodeDataAction, Assembly-CSharp",
+                "fieldsData": {
+                  "$type": "Roam.BehaviourSystem.BTProcessedFieldData[], Assembly-CSharp",
+                  "$values": [
+                    {
+                      "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                      "fieldName": "theObjectToMove",
+                      "value": "self"
+                    },
+                    {
+                      "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                      "fieldName": "TheObjectToMoveTowardsTo",
+                      "value": {
+                        "identifier": "ClosestObjectToMoveTowards",
+                        "value": "none"
+                      }
+                    },
+                    {
+                      "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                      "fieldName": "speed",
+                      "value": 3.0
+                    },
+                    {
+                      "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                      "fieldName": "stoppingDistance",
+                      "value": 2.0
+                    },
+                    {
+                      "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                      "fieldName": "runTillTargetIsReached",
+                      "value": false
+                    }
+                  ]
+                },
+                "friendlyName": "1.2.2.1 - BTActionMoveTowards",
+                "type": "Roam.BehaviourSystem.BTActionMoveTowards, Assembly-CSharp"
+              },
+              "fieldsData": {
+                "$type": "Roam.BehaviourSystem.BTProcessedFieldData[], Assembly-CSharp",
+                "$values": [
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "transformList",
+                    "value": {
+                      "identifier": "ObjectsOptimalRangeList",
+                      "value": null
+                    }
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "index",
+                    "value": 0
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "element",
+                    "value": {
+                      "identifier": "ClosestObjectToMoveTowards",
+                      "value": "none"
+                    }
+                  }
+                ]
+              },
+              "friendlyName": "1.2.2 - BTForArrayElement",
+              "type": "Roam.BehaviourSystem.BTForArrayElement, Assembly-CSharp"
+            }
+          ]
+        },
+        "friendlyName": "1.2 - Sequence",
+        "type": "BehaviorDesigner.Runtime.Tasks.Sequence, BehaviorDesigner.Runtime"
+      },
+      {
+        "$type": "Roam.BehaviourSystem.BTNodeDataComposite, Assembly-CSharp",
+        "abortType": 0,
+        "children": {
+          "$type": "Roam.BehaviourSystem.BTNodeData[], Assembly-CSharp",
+          "$values": [
+            {
+              "$type": "Roam.BehaviourSystem.BTNodeDataAction, Assembly-CSharp",
+              "fieldsData": {
+                "$type": "Roam.BehaviourSystem.BTProcessedFieldData[], Assembly-CSharp",
+                "$values": [
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "toRotate",
+                    "value": "self"
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "rotationSpeed",
+                    "value": 45.0
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "axis",
+                    "value": {
+                      "x": 0.0,
+                      "y": 1.0,
+                      "z": 0.0
+                    }
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "useWorldSpace",
+                    "value": false
+                  }
+                ]
+              },
+              "friendlyName": "1.3.1 - BTActionRotate",
+              "type": "Roam.BehaviourSystem.BTActionRotate, Assembly-CSharp"
+            },
+            {
+              "$type": "Roam.BehaviourSystem.BTNodeDataAction, Assembly-CSharp",
+              "fieldsData": {
+                "$type": "Roam.BehaviourSystem.BTProcessedFieldData[], Assembly-CSharp",
+                "$values": [
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "theObjectToMove",
+                    "value": "self"
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "TheObjectToMoveTowardsTo",
+                    "value": "child (0, -1, 0)"
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "speed",
+                    "value": 0.5
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "stoppingDistance",
+                    "value": 0.0
+                  },
+                  {
+                    "$type": "Roam.BehaviourSystem.BTProcessedFieldData, Assembly-CSharp",
+                    "fieldName": "runTillTargetIsReached",
+                    "value": false
+                  }
+                ]
+              },
+              "friendlyName": "1.3.2 - BTActionMoveTowards",
+              "type": "Roam.BehaviourSystem.BTActionMoveTowards, Assembly-CSharp"
+            }
+          ]
+        },
+        "friendlyName": "1.3 - Parallel",
+        "type": "BehaviorDesigner.Runtime.Tasks.Parallel, BehaviorDesigner.Runtime"
+      }
+    ]
+  },
+  "friendlyName": "1 - Selector",
+  "type": "BehaviorDesigner.Runtime.Tasks.Selector, BehaviorDesigner.Runtime"
+}

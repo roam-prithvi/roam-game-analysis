@@ -20,9 +20,9 @@ from src.analysis.extract_bbox import extract_bbox_from_gemini_response
 # Sieve wrapper, but we declare the constant for future use and to make
 # the intent explicit.
 
-YOLO_CONFIDENCE_THRESHOLD: float = 0.20  # used when calling YOLOv8
+YOLO_CONFIDENCE_THRESHOLD: float = 0.45  # used when calling YOLOv8
 # SAM2_CONFIDENCE_THRESHOLD: float = 0.50  # reserved for potential SAM 2 tuning
-
+YOLO_IOU_THRESHOLD        = 0.6 
 # Gemini settings
 GEMINI_MODEL_NAME: str = "gemini-2.5-pro-preview-06-05"
 MAX_CONCURRENT_REQUESTS: int = (

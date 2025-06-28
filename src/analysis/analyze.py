@@ -39,12 +39,13 @@ from tenacity import (
 )
 
 from .mock_scene_analysis import mock_scene_analysis
+from .game_specific_mocks import get_mock_for_game
 
 PROD: bool = False  # Set to True for production, False for development/testing
 LLM_NAME: str = (
-    "models/gemini-2.5-pro-preview-06-05"
+    "models/gemini-2.5-pro"
     if PROD
-    else "models/gemini-2.5-flash-preview-05-20"
+    else "models/gemini-2.5-flash"
 )
 MAX_CONCURRENT_REQUESTS: int = 100 if PROD else 500
 MAX_CONCURRENT_SEGMENTATION: int = 10  # Limit simultaneous Sieve segmentation jobs
@@ -483,10 +484,18 @@ async def _analyze_session(session_path: Path) -> List[Dict[str, Any]]:
 
     frames_dir = session_path / "frames"
     console = Console()
+    
+    # Log the game being analyzed
+    game_name = session_path.parent.name
+    session_name = session_path.name
+    console.print(f"🎮  Analyzing game: {game_name}")
+    console.print(f"📁  Session: {session_name}")
 
     if not PROD:
         # Return mock data for development/testing. Makes it faster and saves Gemini requests.
         console.print("🧪  Development mode: Using mock scene analysis data")
+        console.print("⚠️  WARNING: Mock data is game-specific and may not match your actual game!")
+        console.print("💡  Set PROD=True in analyze.py to get real analysis")
 
         # Create mock data that matches the SceneAnalysis structure
         # Create multiple mock analyses for different time frames
@@ -495,8 +504,11 @@ async def _analyze_session(session_path: Path) -> List[Dict[str, Any]]:
             :3
         ]  # Just first 3 for testing
 
+        # Use game-specific mock data if available
+        game_mock = get_mock_for_game(game_name)
+        
         for i, time_frame in enumerate(time_frames):
-            mock_analysis = mock_scene_analysis.copy()
+            mock_analysis = game_mock.copy()
             mock_analysis["frame"] = time_frame.name
             mock_analyses.append(mock_analysis)
 
@@ -561,6 +573,21 @@ async def _analyze_session(session_path: Path) -> List[Dict[str, Any]]:
                     failed_analyses.append((pair_idx, result))
                 else:
                     successful_analyses.append(result)
+            
+            # Validate results are appropriate for the game
+            if successful_analyses and game_name:
+                sample_assets = []
+                for analysis in successful_analyses[:3]:  # Check first 3
+                    for asset in analysis.get("assets", []):
+                        sample_assets.append(asset.get("name", "").lower())
+                
+                # Basic sanity check - warn if potential mismatch
+                if "pvz" in game_name.lower() or "plant" in game_name.lower():
+                    if any("train" in asset or "subway" in asset or "skateboard" in asset for asset in sample_assets):
+                        console.print("⚠️  WARNING: Detected possible game mismatch - found runner game assets in Plants vs Zombies data")
+                elif "subway" in game_name.lower() or "surf" in game_name.lower():
+                    if any("plant" in asset or "zombie" in asset or "peashooter" in asset for asset in sample_assets):
+                        console.print("⚠️  WARNING: Detected possible game mismatch - found tower defense assets in runner game data")
 
         # Print summary
         console.print(f"✅  Analysis complete:")
