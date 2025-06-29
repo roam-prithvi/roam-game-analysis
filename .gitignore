@@ -14,4 +14,5 @@ batch_cutouts/
 **/*.spec
 build/
 
-venv
+.venv
+.env/

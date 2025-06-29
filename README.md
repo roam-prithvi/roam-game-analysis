@@ -26,6 +26,11 @@ data/
 │       ├── touch_events.log            # Raw touch event log (from android_streamer)
 │       ├── video_error.log             # Raw FFmpeg/ADB error log (from android_streamer). Not really used
 │       ├── screen_recording_overlay.mp4# Video with touch visualization overlay (created by visualize.py)
+│       ├── chunked/                    # Video chunks for spatial understanding (created by video_chunker.py)
+│       │   ├── 0.mp4                      # First 5-second chunk
+│       │   ├── 1.mp4                      # Second chunk (with 2s overlap)
+│       │   ├── ...                         # Additional chunks
+│       │   └── metadata.json               # Chunk timing and metadata
 │       ├── frames/                     # Frames captured from the video at intervals (created by frame_cutter.py; all CONSTANTS in this section are inside frame_cutter.py). They will be fed into the LLM and segmentation model by analyze.py
 │       │   ├── <timestamp>_time.png        # Timeline snapshot (every FRAME_INTERVAL)
 │       │   ├── <timestamp>_touch.png       # Frame at the moment of user touch
@@ -43,3 +48,22 @@ data/
 Each *game_name* directory holds multiple recording *sessions*, one per *TIMESTAMP* folder. The helper `src.util.list_sessions()` enumerates them newest → oldest.
 
 - The data collectors (crowdworkers) should be sending you only the raw files - `screen_recording.mp4`, `touch_events.log`, `video_error.log`. You then run the postprocessing on your machine
+
+## Video Processing Commands
+
+### Create video chunks for spatial understanding
+```bash
+# Chunk the latest session for a game
+python -m src.processing.video_chunker --game "subway surfers"
+
+# Chunk a specific session
+python -m src.processing.video_chunker --game "subway surfers" --session "08-06-25_at_19.33.00"
+
+# Chunk all sessions for a game
+python -m src.processing.video_chunker --game "subway surfers" --all
+
+# Custom chunk settings (default: 5s chunks with 2s overlap)
+python -m src.processing.video_chunker --game "subway surfers" --chunk-duration 10 --overlap 3
+```
+
+The video chunker creates 5-second video chunks with 2-second overlaps in the `chunked/` subdirectory of each session. These chunks are used by the spatial understanding pipeline to convert gameplay into 3D Unity scenes.
