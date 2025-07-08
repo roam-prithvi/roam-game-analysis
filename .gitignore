@@ -14,5 +14,9 @@ batch_cutouts/
 **/*.spec
 build/
 
+# Virtual environments
 .venv
-.env/
+venv
+
+# Environment files
+.env

@@ -10,10 +10,11 @@ see companion notion page at https://www.notion.so/Game-Scraping-217eefc87333809
     - for mac: `brew install ffmpeg`
     - for windows: download the latest static build from [ffmpeg.org](https://ffmpeg.org/download.html#build-windows) and add the `bin` folder to your PATH
     - for linux: use your package manager, e.g. `sudo apt install ffmpeg` for Ubuntu/Debian
-- create a virtual environment and install Python requirements:
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
+- install Python requirements using uv:
+    uv sync
+- (Optional) For advanced video analysis with Grounded-SAM-2, run the setup script:
+    ./scripts/setup_grounded_sam_mac.sh  # For macOS
+    # This downloads ~2GB of AI models for object detection
 
 
 ## Data folder layout

@@ -149,7 +149,7 @@ def get_ffmpeg_path() -> str:
 ADB_BIN = get_adb_path()
 
 # --- FFmpeg static setup logic ---
-FFMPEG_BIN = get_ffmpeg_path()
+# FFMPEG_BIN = get_ffmpeg_path()
 
 EVENT_LOG_FILE = "touch_events.log"  # The file where raw touch events will be saved
 VIDEO_OUTPUT_FILE = "screen_recording.mp4"  # The file where video will be saved
@@ -184,7 +184,7 @@ def sanitize_path_component(component: str) -> str:
 def get_data_base_dir() -> str:
     """Return the base directory for data storage depending on PROD flag."""
     if PROD:
-        return os.path.expanduser(os.path.join("~", "Downloads", "data"))
+        return "data"
     else:
         return "data"
 
@@ -292,7 +292,11 @@ def find_touchscreen_device() -> str:
             # name-based "touch" heuristic *or* (b) declares itself as a DIRECT
             # input device (common for touch panels).  We still require the
             # multi-touch ABS axes so we don't accidentally pick up e.g. a trackpad.
-            if has_abs_mt_x and has_abs_mt_y and (is_touchscreen or "INPUT_PROP_DIRECT" in block):
+            if (
+                has_abs_mt_x
+                and has_abs_mt_y
+                and (is_touchscreen or "INPUT_PROP_DIRECT" in block)
+            ):
                 # Look for the first occurrence of "/dev/input/eventX" anywhere in
                 # the device block instead of relying solely on the first line.
                 match = re.search(r"(/dev/input/event\d+)", block)
@@ -417,7 +421,7 @@ def create_coordinate_translator(
         return pixel_x, pixel_y
 
     print(
-        f"✅ Coordinate translator created: {x_max-x_min+1}x{y_max-y_min+1} -> {screen_width}x{screen_height}"
+        f"✅ Coordinate translator created: {x_max - x_min + 1}x{y_max - y_min + 1} -> {screen_width}x{screen_height}"
     )
     return translate
 
@@ -522,7 +526,11 @@ def process_event_line(line: str) -> Optional[str]:
     Returns:
         Processed line string or None if line should be skipped
     """
-    global coordinate_translator, first_tap_time, first_video_frame_time, video_frame_detected
+    global \
+        coordinate_translator, \
+        first_tap_time, \
+        first_video_frame_time, \
+        video_frame_detected
 
     if not line.strip():
         return None
@@ -710,7 +718,14 @@ def cleanup_log() -> None:
 
 def main() -> None:
     """Main function to set up and run the concurrent streams."""
-    global event_log_file, coordinate_translator, stream_start_time, first_tap_time, first_video_frame_time, video_frame_detected, video_log_file
+    global \
+        event_log_file, \
+        coordinate_translator, \
+        stream_start_time, \
+        first_tap_time, \
+        first_video_frame_time, \
+        video_frame_detected, \
+        video_log_file
     # Set up the Ctrl+C handler
     signal.signal(signal.SIGINT, signal_handler)
 

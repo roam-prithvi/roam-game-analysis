@@ -152,6 +152,94 @@ def interactive_session_selection(game_dir: Path) -> List[Path]:
                 print("❌ Please enter a valid number, 'A', or 'Q'.")
 
 
+def scan_data_directory():
+    """Scan the data directory and return game directories and their sessions."""
+    data_dir = Path("data")
+    if not data_dir.exists():
+        return {}
+    
+    games = {}
+    for game_dir in data_dir.iterdir():
+        if game_dir.is_dir() and not game_dir.name.startswith('.'):
+            sessions = list_sessions(game_dir)
+            if sessions:
+                games[game_dir.name] = {
+                    'path': game_dir,
+                    'sessions': sessions
+                }
+    
+    return games
+
+
+def interactive_game_and_session_selection():
+    """Interactive selection of game and sessions from data directory."""
+    games = scan_data_directory()
+    
+    if not games:
+        print("❌ No games found in data/ directory")
+        return None, []
+    
+    # Sort games alphabetically
+    sorted_games = sorted(games.keys())
+    
+    print("\n🎮 Available Games:")
+    for i, game_name in enumerate(sorted_games, 1):
+        session_count = len(games[game_name]['sessions'])
+        print(f"  [{i}] {game_name} ({session_count} session{'s' if session_count != 1 else ''})")
+    
+    # Game selection
+    while True:
+        choice = input(f"\n🔢 Select game [1-{len(sorted_games)}]: ").strip()
+        try:
+            game_idx = int(choice) - 1
+            if 0 <= game_idx < len(sorted_games):
+                selected_game = sorted_games[game_idx]
+                break
+            else:
+                print("❌ Invalid selection. Please try again.")
+        except ValueError:
+            print("❌ Please enter a valid number.")
+    
+    game_data = games[selected_game]
+    sessions = game_data['sessions']
+    
+    # Sort sessions by timestamp (newest first)
+    sessions.sort(key=lambda x: x.name, reverse=True)
+    
+    print(f"\n📂 Sessions for {selected_game}:")
+    for i, session in enumerate(sessions, 1):
+        # Try to get session timestamp from folder name
+        print(f"  [{i}] {session.name}")
+    
+    if len(sessions) == 1:
+        print(f"\n🎯 Auto-selecting single session: {sessions[0].name}")
+        return selected_game, sessions
+    
+    print(f"  [A] Analyze ALL {len(sessions)} sessions")
+    print(f"  [L] Analyze LATEST session")
+    print(f"  [Q] Quit")
+    
+    # Session selection
+    while True:
+        choice = input(f"\n🔢 Select option [1-{len(sessions)}, A, L, Q]: ").strip().upper()
+        
+        if choice == "Q":
+            return selected_game, []
+        elif choice == "A":
+            return selected_game, sessions
+        elif choice == "L":
+            return selected_game, [sessions[0]]  # Latest session
+        else:
+            try:
+                session_idx = int(choice) - 1
+                if 0 <= session_idx < len(sessions):
+                    return selected_game, [sessions[session_idx]]
+                else:
+                    print("❌ Invalid selection. Please try again.")
+            except ValueError:
+                print("❌ Please enter a valid number, 'A', 'L', or 'Q'.")
+
+
 async def interactive_mode():
     """Interactive mode for analysis configuration."""
     print_banner()
@@ -184,44 +272,17 @@ async def interactive_mode():
     
     # Get analysis type
     if detector_type != "comparison":
-        print("\n📁 Analysis Mode:")
-        print("  [1] Single session analysis")
-        print("  [2] Game directory analysis")
+        # Automatically scan data directory and let user select
+        game_name, selected_sessions = interactive_game_and_session_selection()
         
-        while True:
-            mode_choice = input("\n🔢 Select mode [1-2]: ").strip()
-            if mode_choice in ["1", "2"]:
-                break
-            print("❌ Please enter 1 or 2.")
+        if not selected_sessions:
+            print("❌ No sessions selected")
+            return
         
-        # Get path
-        if mode_choice == "1":
-            session_path = input("\n📁 Enter session path: ").strip()
-            if not session_path:
-                print("❌ Session path is required")
-                return
-            
-            session_path = Path(session_path)
-            if not session_path.exists():
-                print(f"❌ Path not found: {session_path}")
-                return
-            
-            await analyze_single_session(session_path, detector_type)
-            
-        else:  # mode_choice == "2"
-            game_dir = input("\n📁 Enter game directory path: ").strip()
-            if not game_dir:
-                print("❌ Game directory path is required")
-                return
-            
-            game_dir = Path(game_dir)
-            if not game_dir.exists():
-                print(f"❌ Path not found: {game_dir}")
-                return
-            
-            selected_sessions = interactive_session_selection(game_dir)
-            if selected_sessions:
-                await analyze_multiple_sessions(selected_sessions, detector_type)
+        if len(selected_sessions) == 1:
+            await analyze_single_session(selected_sessions[0], detector_type, game_name)
+        else:
+            await analyze_multiple_sessions(selected_sessions, detector_type, game_name)
     
     else:  # Comparison mode
         test_dir = input("\n📸 Enter test images directory: ").strip()
