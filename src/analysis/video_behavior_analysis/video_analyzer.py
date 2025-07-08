@@ -9,6 +9,7 @@ import json
 import os
 import sys
 import time
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
@@ -147,6 +148,10 @@ class VideoGameplayAnalyzer:
         # Add universal object extraction capability
         self.universal_extractor = None
         self.extracted_objects: Set[str] = set()
+        
+        # Initialize video upload cache
+        self.cache_file = self.video_analysis_dir / "gemini_upload_cache.json"
+        self.upload_cache = self._load_upload_cache()
     
     def load_touch_events(self) -> Dict[str, List[TouchEvent]]:
         """Load and parse touch events from all session log files."""
@@ -477,58 +482,150 @@ CRITICAL REQUIREMENTS:
 
         return prompt
     
+    def _load_upload_cache(self) -> Dict[str, Any]:
+        """Load the video upload cache from disk."""
+        if self.cache_file.exists():
+            try:
+                with open(self.cache_file, 'r') as f:
+                    cache = json.load(f)
+                print(f"📋 Loaded upload cache with {len(cache)} entries")
+                return cache
+            except Exception as e:
+                print(f"⚠️ Failed to load cache: {e}")
+                return {}
+        return {}
+    
+    def _save_upload_cache(self):
+        """Save the video upload cache to disk."""
+        try:
+            with open(self.cache_file, 'w') as f:
+                json.dump(self.upload_cache, f, indent=2)
+            print(f"💾 Saved upload cache with {len(self.upload_cache)} entries")
+        except Exception as e:
+            print(f"⚠️ Failed to save cache: {e}")
+    
+    def _get_file_hash(self, file_path: Path) -> str:
+        """Generate a hash for a file based on path, size, and modification time."""
+        stat = file_path.stat()
+        # Combine file path, size, and modification time for a unique identifier
+        hash_string = f"{file_path.absolute()}:{stat.st_size}:{stat.st_mtime}"
+        return hashlib.md5(hash_string.encode()).hexdigest()
+    
+    def _check_gemini_file_active(self, file_uri: str) -> bool:
+        """Check if a Gemini file URI is still active and accessible."""
+        try:
+            # Extract file name from URI (format: https://generativelanguage.googleapis.com/v1beta/files/...)
+            file_name = file_uri.split('/')[-1]
+            file_info = self.client.files.get(name=f"files/{file_name}")
+            return file_info.state == "ACTIVE"
+        except Exception as e:
+            print(f"⚠️ Failed to check file status: {e}")
+            return False
+    
     def upload_videos_to_gemini(self):
         """Upload all video files to Gemini and return list of file objects."""
         uploaded_files = []
+        cache_updated = False
         
         for session_data in self.sessions_data:
             video_file = session_data['video_file']
             session_name = session_data['session_name']
             
+            # Generate file hash for cache key
+            file_hash = self._get_file_hash(video_file)
+            cache_key = f"{video_file.absolute()}:{file_hash}"
+            
+            # Check if file is in cache and still active
+            if cache_key in self.upload_cache:
+                cached_entry = self.upload_cache[cache_key]
+                cached_uri = cached_entry.get('uri')
+                
+                print(f"🔍 Found cached upload for: {session_name}")
+                
+                # Verify the cached file is still active
+                if self._check_gemini_file_active(cached_uri):
+                    print(f"✅ Using cached video. Session: {session_name}, URI: {cached_uri}")
+                    # Recreate file object from cached URI
+                    uploaded_file = type('obj', (object,), {
+                        'uri': cached_uri,
+                        'name': f"files/{cached_uri.split('/')[-1]}"
+                    })
+                    uploaded_files.append({
+                        'file': uploaded_file,
+                        'session_name': session_name
+                    })
+                    continue
+                else:
+                    print(f"⚠️ Cached file expired, re-uploading...")
+                    del self.upload_cache[cache_key]
+                    cache_updated = True
+            
+            # Upload video file (not in cache or cache expired)
             print(f"📤 Uploading video to Gemini: {session_name}")
             
             try:
                 # Upload video file
                 uploaded_file = self.client.files.upload(file=str(video_file))
                 print(f"✅ Video uploaded successfully. Session: {session_name}, URI: {uploaded_file.uri}")
+                
+                # Add to uploaded files list
                 uploaded_files.append({
                     'file': uploaded_file,
                     'session_name': session_name
                 })
                 
+                # Update cache
+                self.upload_cache[cache_key] = {
+                    'uri': uploaded_file.uri,
+                    'session_name': session_name,
+                    'uploaded_at': datetime.now().isoformat(),
+                    'file_size': video_file.stat().st_size,
+                    'file_mtime': video_file.stat().st_mtime
+                }
+                cache_updated = True
+                
             except Exception as e:
                 print(f"❌ Error uploading video from {session_name}: {e}")
                 raise
         
-        # Wait for all files to be processed
-        print("⏳ Waiting for all videos to be processed...")
-        max_wait = 300  # 5 minutes max
-        wait_time = 0
+        # Save cache if updated
+        if cache_updated:
+            self._save_upload_cache()
         
-        while wait_time < max_wait:
-            all_active = True
-            for uploaded_data in uploaded_files:
-                uploaded_file = uploaded_data['file']
-                session_name = uploaded_data['session_name']
+        # Wait for all newly uploaded files to be processed
+        newly_uploaded = [data for data in uploaded_files if hasattr(data['file'], 'state')]
+        if newly_uploaded:
+            print(f"⏳ Waiting for {len(newly_uploaded)} newly uploaded video(s) to be processed...")
+            max_wait = 300  # 5 minutes max
+            wait_time = 0
+            
+            while wait_time < max_wait:
+                all_active = True
+                for uploaded_data in newly_uploaded:
+                    uploaded_file = uploaded_data['file']
+                    session_name = uploaded_data['session_name']
+                    
+                    # Check file status
+                    file_info = self.client.files.get(name=uploaded_file.name)
+                    if file_info.state == "FAILED":
+                        raise Exception(f"Video processing failed for {session_name}: {file_info}")
+                    elif file_info.state != "ACTIVE":
+                        all_active = False
                 
-                # Check file status
-                file_info = self.client.files.get(name=uploaded_file.name)
-                if file_info.state == "FAILED":
-                    raise Exception(f"Video processing failed for {session_name}: {file_info}")
-                elif file_info.state != "ACTIVE":
-                    all_active = False
+                if all_active:
+                    print("✅ All videos processing complete!")
+                    break
+                
+                # Wait and check again
+                time.sleep(5)
+                wait_time += 5
+                if wait_time % 30 == 0:  # Update every 30 seconds
+                    print(f"⏳ Still processing... ({wait_time}s elapsed)")
             
-            if all_active:
-                print("✅ All videos processing complete!")
-                return [data['file'] for data in uploaded_files]
-            
-            # Wait and check again
-            time.sleep(5)
-            wait_time += 5
-            if wait_time % 30 == 0:  # Update every 30 seconds
-                print(f"⏳ Still processing... ({wait_time}s elapsed)")
+            if wait_time >= max_wait:
+                raise Exception(f"Video processing timed out after {max_wait} seconds")
         
-        raise Exception(f"Video processing timed out after {max_wait} seconds")
+        return [data['file'] for data in uploaded_files]
     
     def run_analysis(self) -> str:
         """Main entry point to run the complete analysis."""

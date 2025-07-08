@@ -220,15 +220,22 @@ class GroundedSAMDetector(BaseDetector):
             "--text-prompt", prompt_text,
             "--img-path", image_path,
             "--output-dir", str(output_dir),
-            "--sam2-checkpoint", "./checkpoints/sam2_hiera_large.pt",  # Use available checkpoint
-            "--sam2-model-config", "sam2_hiera_l.yaml",  # Use just filename for Hydra
+            "--sam2-checkpoint", "./checkpoints/sam2_hiera_base_plus.pt",  # Use faster model
+            "--sam2-model-config", "sam2_hiera_b+.yaml",  # Use base plus config
             "--box-threshold", str(self.box_threshold),
             "--text-threshold", str(self.text_threshold)
         ]
         
-        # Add CPU flag if no CUDA available
-        if not torch.cuda.is_available():
-            cmd.append("--force-cpu")
+        # Set device based on availability
+        if torch.backends.mps.is_available():
+            # MPS is available, let the script auto-detect it
+            print("🖥️  Using MPS (Metal Performance Shaders) acceleration")
+        elif torch.cuda.is_available():
+            # CUDA is supported
+            print("🖥️  Using CUDA acceleration")
+        else:
+            cmd.extend(["--force-cpu"])
+            print("🖥️  Using CPU (no GPU acceleration available)")
         
         # Set environment variables
         env = os.environ.copy()
@@ -237,8 +244,7 @@ class GroundedSAMDetector(BaseDetector):
         try:
             # Run detection
             if warm_up:
-                # For warm-up, run with minimal output and suppress JSON dump
-                cmd.append("--no-dump-json")
+                # For warm-up, run with minimal output
                 result = await asyncio.create_subprocess_exec(
                     *cmd,
                     cwd=self.grounded_sam_path,
