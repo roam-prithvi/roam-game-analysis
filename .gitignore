@@ -15,3 +15,4 @@ batch_cutouts/
 build/
 
 venv
+.env
