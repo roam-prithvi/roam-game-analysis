@@ -1,0 +1,164 @@
+{
+  "scene": {
+    "name": "Brawl Stars - Cavern Churn Arena",
+    "description": "A recreation of a symmetrical Brawl Stars arena, based on video analysis from timestamp 45.0 to 53.0. This scene was built by deconstructing complex wall shapes into primitive cubes and tracking the lifecycle of dynamic objects."
+  },
+  "objects": [
+    {
+      "name": "GroundPlane",
+      "model": "Plane",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 5, "y": 1, "z": 5 },
+      "color": "#C2B280",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "PowerUpBox_CenterRight",
+      "model": "Cube",
+      "position": { "x": 4, "y": 0.75, "z": 0 },
+      "scale": { "x": 1.5, "y": 1.5, "z": 1.5 },
+      "color": "#A52A2A",
+      "text": "Power Box",
+      "start_timestamp": 45.0,
+      "end_timestamp": 46.5
+    },
+    {
+      "name": "PowerUpBox_TopRight",
+      "model": "Cube",
+      "position": { "x": 6, "y": 0.75, "z": 6 },
+      "scale": { "x": 1.5, "y": 1.5, "z": 1.5 },
+      "color": "#A52A2A",
+      "text": "Power Box",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_MidRight_C_Vertical",
+      "model": "Cube",
+      "position": { "x": 6, "y": 1, "z": 0 },
+      "scale": { "x": 2, "y": 2, "z": 10 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_MidRight_C_TopArm",
+      "model": "Cube",
+      "position": { "x": 9, "y": 1, "z": 4 },
+      "scale": { "x": 4, "y": 2, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_MidRight_C_BottomArm",
+      "model": "Cube",
+      "position": { "x": 9, "y": 1, "z": -4 },
+      "scale": { "x": 4, "y": 2, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_MidLeft_C_Vertical",
+      "model": "Cube",
+      "position": { "x": -6, "y": 1, "z": 0 },
+      "scale": { "x": 2, "y": 2, "z": 10 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_MidLeft_C_TopArm",
+      "model": "Cube",
+      "position": { "x": -9, "y": 1, "z": 4 },
+      "scale": { "x": 4, "y": 2, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_MidLeft_C_BottomArm",
+      "model": "Cube",
+      "position": { "x": -9, "y": 1, "z": -4 },
+      "scale": { "x": 4, "y": 2, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_Top_Center_Bar",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1, "z": 10 },
+      "scale": { "x": 8, "y": 2, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_Top_Right_Block",
+      "model": "Cube",
+      "position": { "x": 6, "y": 1, "z": 8 },
+      "scale": { "x": 2, "y": 2, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_Top_Left_Block",
+      "model": "Cube",
+      "position": { "x": -6, "y": 1, "z": 8 },
+      "scale": { "x": 2, "y": 2, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_Bottom_Center_Bar",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1, "z": -10 },
+      "scale": { "x": 8, "y": 2, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_BottomRight_L_Vertical",
+      "model": "Cube",
+      "position": { "x": 11, "y": 1, "z": -8 },
+      "scale": { "x": 2, "y": 2, "z": 4 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_BottomRight_L_Horizontal",
+      "model": "Cube",
+      "position": { "x": 9, "y": 1, "z": -10 },
+      "scale": { "x": 4, "y": 2, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_BottomLeft_L_Vertical",
+      "model": "Cube",
+      "position": { "x": -11, "y": 1, "z": -8 },
+      "scale": { "x": 2, "y": 2, "z": 4 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    },
+    {
+      "name": "Wall_BottomLeft_L_Horizontal",
+      "model": "Cube",
+      "position": { "x": -9, "y": 1, "z": -10 },
+      "scale": { "x": 4, "y": 2, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 45.0,
+      "end_timestamp": 53.0
+    }
+  ]
+}

@@ -1,0 +1,315 @@
+{
+  "scene": {
+    "name": "Solo Showdown",
+    "description": "A top-down view of a symmetrical desert-themed Brawl Stars map for Solo Showdown. The map features reddish-brown walls, vision-obscuring yellow bushes, green cacti, and destructible power-up boxes. A poisonous gas cloud begins to shrink the playable area over time."
+  },
+  "objects": [
+    {
+      "name": "Ground_Plane",
+      "model": "Plane",
+      "position": { "x": 0, "y": 0, "z": 10 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 6, "y": 1, "z": 5 },
+      "color": "#FAEBD7",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_Center_Top_C_Shape_Vertical",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.5, "z": 16 },
+      "scale": { "x": 1, "y": 1.5, "z": 3 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_Center_Top_C_Shape_Horizontal",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.5, "z": 17.5 },
+      "scale": { "x": 4, "y": 1.5, "z": 1 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_Center_Bottom_C_Shape_Vertical",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.5, "z": 4 },
+      "scale": { "x": 1, "y": 1.5, "z": 3 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_Center_Bottom_C_Shape_Horizontal",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.5, "z": 2.5 },
+      "scale": { "x": 4, "y": 1.5, "z": 1 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_L_Shape_Top_Left_Vertical",
+      "model": "Cube",
+      "position": { "x": -8, "y": 0.5, "z": 17 },
+      "scale": { "x": 1, "y": 1.5, "z": 5 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_L_Shape_Top_Left_Horizontal",
+      "model": "Cube",
+      "position": { "x": -6, "y": 0.5, "z": 19.0 },
+      "scale": { "x": 3, "y": 1.5, "z": 1 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_L_Shape_Top_Right_Vertical",
+      "model": "Cube",
+      "position": { "x": 8, "y": 0.5, "z": 17 },
+      "scale": { "x": 1, "y": 1.5, "z": 5 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_L_Shape_Top_Right_Horizontal",
+      "model": "Cube",
+      "position": { "x": 6, "y": 0.5, "z": 19.0 },
+      "scale": { "x": 3, "y": 1.5, "z": 1 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_L_Shape_Bottom_Left_Vertical",
+      "model": "Cube",
+      "position": { "x": -8, "y": 0.5, "z": 4 },
+      "scale": { "x": 1, "y": 1.5, "z": 5 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_L_Shape_Bottom_Left_Horizontal",
+      "model": "Cube",
+      "position": { "x": -6, "y": 0.5, "z": 1.0 },
+      "scale": { "x": 3, "y": 1.5, "z": 1 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_L_Shape_Bottom_Right_Vertical",
+      "model": "Cube",
+      "position": { "x": 8, "y": 0.5, "z": 4 },
+      "scale": { "x": 1, "y": 1.5, "z": 5 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Wall_L_Shape_Bottom_Right_Horizontal",
+      "model": "Cube",
+      "position": { "x": 6, "y": 0.5, "z": 1.0 },
+      "scale": { "x": 3, "y": 1.5, "z": 1 },
+      "color": "#A0522D",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Bush_Center_Vertical",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.25, "z": 10 },
+      "scale": { "x": 1, "y": 0.5, "z": 8 },
+      "color": "#FFD700",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Bush_TopLeft_Cluster",
+      "model": "Cube",
+      "position": { "x": -5, "y": 0.25, "z": 16 },
+      "scale": { "x": 5, "y": 0.5, "z": 1 },
+      "color": "#FFD700",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Bush_TopRight_Cluster",
+      "model": "Cube",
+      "position": { "x": 5, "y": 0.25, "z": 16 },
+      "scale": { "x": 5, "y": 0.5, "z": 1 },
+      "color": "#FFD700",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Bush_BottomLeft_Cluster",
+      "model": "Cube",
+      "position": { "x": -5, "y": 0.25, "z": 4 },
+      "scale": { "x": 5, "y": 0.5, "z": 1 },
+      "color": "#FFD700",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Bush_BottomRight_Cluster",
+      "model": "Cube",
+      "position": { "x": 5, "y": 0.25, "z": 4 },
+      "scale": { "x": 5, "y": 0.5, "z": 1 },
+      "color": "#FFD700",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "PowerUpBox_Center_Top",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.5, "z": 12.5 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#8B4513",
+      "text": "Power Cube",
+      "start_timestamp": 5.0,
+      "end_timestamp": 27.5
+    },
+    {
+      "name": "PowerUpBox_Center_Bottom",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.5, "z": 7.5 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#8B4513",
+      "text": "Power Cube",
+      "start_timestamp": 5.0,
+      "end_timestamp": 28.0
+    },
+    {
+      "name": "PowerUpBox_BottomLeft_1",
+      "model": "Cube",
+      "position": { "x": -5, "y": 0.5, "z": 7 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#8B4513",
+      "text": "Power Cube",
+      "start_timestamp": 5.0,
+      "end_timestamp": 11.0
+    },
+    {
+      "name": "PowerUpBox_BottomLeft_2",
+      "model": "Cube",
+      "position": { "x": -5, "y": 0.5, "z": 9 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#8B4513",
+      "text": "Power Cube",
+      "start_timestamp": 5.0,
+      "end_timestamp": 11.0
+    },
+    {
+      "name": "PowerUpBox_TopRight_1 (Mirror)",
+      "model": "Cube",
+      "position": { "x": 5, "y": 0.5, "z": 13 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#8B4513",
+      "text": "Power Cube",
+      "start_timestamp": 5.0,
+      "end_timestamp": 24.0
+    },
+    {
+      "name": "PowerUpBox_TopRight_2 (Mirror)",
+      "model": "Cube",
+      "position": { "x": 5, "y": 0.5, "z": 11 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#8B4513",
+      "text": "Power Cube",
+      "start_timestamp": 5.0,
+      "end_timestamp": 24.0
+    },
+    {
+      "name": "Cactus_Bottom_1",
+      "model": "Capsule",
+      "position": { "x": -10, "y": 0.5, "z": 1 },
+      "scale": { "x": 0.5, "y": 1, "z": 0.5 },
+      "color": "#228B22",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Cactus_Bottom_2",
+      "model": "Capsule",
+      "position": { "x": 10, "y": 0.5, "z": 1 },
+      "scale": { "x": 0.5, "y": 1, "z": 0.5 },
+      "color": "#228B22",
+      "start_timestamp": 5.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Bone_Debris_1",
+      "model": "Capsule",
+      "position": { "x": -2, "y": 0.1, "z": 18 },
+      "scale": { "x": 0.3, "y": 0.1, "z": 0.3 },
+      "color": "#FFFFFF",
+      "start_timestamp": 25.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Bone_Debris_2",
+      "model": "Capsule",
+      "position": { "x": 2, "y": 0.1, "z": 18 },
+      "scale": { "x": 0.3, "y": 0.1, "z": 0.3 },
+      "color": "#FFFFFF",
+      "start_timestamp": 25.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Bone_Debris_3",
+      "model": "Capsule",
+      "position": { "x": -6, "y": 0.1, "z": 8 },
+      "scale": { "x": 0.4, "y": 0.1, "z": 0.4 },
+      "color": "#FFFFFF",
+      "start_timestamp": 25.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Bone_Debris_4",
+      "model": "Capsule",
+      "position": { "x": 6, "y": 0.1, "z": 8 },
+      "scale": { "x": 0.4, "y": 0.1, "z": 0.4 },
+      "color": "#FFFFFF",
+      "start_timestamp": 25.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "PowerUpBox_Center_Top_2",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.5, "z": 13.0 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#8B4513",
+      "text": "Power Cube",
+      "start_timestamp": 30.0,
+      "end_timestamp": 31.0
+    },
+    {
+      "name": "PowerUpBox_Top_From_Clip_7",
+      "model": "Cube",
+      "position": { "x": 4, "y": 0.5, "z": 14.5 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#8B4513",
+      "text": "Power Cube",
+      "start_timestamp": 35.0,
+      "end_timestamp": 44.0
+    },
+    {
+      "name": "PowerUpBox_TopLeft_From_Clip_8",
+      "model": "Cube",
+      "position": { "x": -5, "y": 0.5, "z": 17.5 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#8B4513",
+      "text": "Power Cube",
+      "start_timestamp": 46.0,
+      "end_timestamp": 50.0
+    }
+  ]
+}

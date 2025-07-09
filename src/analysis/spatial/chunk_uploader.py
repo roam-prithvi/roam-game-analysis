@@ -471,34 +471,57 @@ class ChunkUploader:
         return results
     
     def _save_results(self, results: Dict[str, Dict]):
-        """Save upload results to JSON file."""
-        output_file = f"upload_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        
-        # Convert results to serializable format
-        serializable_results = {}
+        """Save upload results to JSON files in each chunked directory."""
+        # Group results by chunk directory
+        results_by_dir = {}
         for path, result in results.items():
-            serializable_result = result.copy()
-            # Remove non-serializable file object
-            if "file_object" in serializable_result:
-                if serializable_result["file_object"]:
-                    serializable_result["file_info"] = {
-                        "name": serializable_result.get("file_name", ""),
-                        "display_name": serializable_result["display_name"]
-                    }
-                del serializable_result["file_object"]
-            serializable_results[path] = serializable_result
+            chunk_dir = str(Path(path).parent)
+            if chunk_dir not in results_by_dir:
+                results_by_dir[chunk_dir] = {}
+            results_by_dir[chunk_dir][path] = result
         
-        # Add metadata
-        output_data = {
-            "upload_stats": self.upload_stats,
-            "results": serializable_results
-        }
+        # Save results for each directory
+        saved_files = []
+        for chunk_dir, dir_results in results_by_dir.items():
+            # Convert results to serializable format
+            serializable_results = {}
+            for path, result in dir_results.items():
+                serializable_result = result.copy()
+                # Remove non-serializable file object
+                if "file_object" in serializable_result:
+                    if serializable_result["file_object"]:
+                        serializable_result["file_info"] = {
+                            "name": serializable_result.get("file_name", ""),
+                            "display_name": serializable_result["display_name"]
+                        }
+                    del serializable_result["file_object"]
+                serializable_results[path] = serializable_result
+            
+            # Calculate stats for this directory
+            dir_stats = {
+                "total": len(dir_results),
+                "successful": sum(1 for r in dir_results.values() if r["status"] == "success"),
+                "failed": sum(1 for r in dir_results.values() if r["status"] == "failed"),
+                "upload_time": datetime.now().isoformat()
+            }
+            
+            # Add metadata
+            output_data = {
+                "upload_stats": dir_stats,
+                "results": serializable_results
+            }
+            
+            # Save to file in the chunked directory
+            output_file = Path(chunk_dir) / "upload_results.json"
+            with open(output_file, "w") as f:
+                json.dump(output_data, f, indent=2, default=str)
+            
+            saved_files.append(str(output_file))
         
-        # Save to file
-        with open(output_file, "w") as f:
-            json.dump(output_data, f, indent=2, default=str)
-        
-        print(f"\nResults saved to: {output_file}")
+        # Print summary
+        print(f"\nResults saved to {len(saved_files)} location(s):")
+        for file_path in saved_files:
+            print(f"  - {file_path}")
     
     def get_successful_uploads(self, results: Dict[str, Dict]) -> Dict[str, any]:
         """

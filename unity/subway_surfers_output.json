@@ -1,0 +1,1353 @@
+{
+  "scene": {
+    "name": "Subway Surfers - Trainyard",
+    "description": "A 3D representation of a 10-second clip from the game Subway Surfers, showing a run through a trainyard with obstacles and coins."
+  },
+  "objects": [
+    {
+      "name": "Track Bed",
+      "model": "Plane",
+      "position": { "x": 0, "y": 0, "z": 100 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 20, "y": 1, "z": 200 },
+      "color": "#A0522D",
+      "text": "GROUND",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Left Scenery Train",
+      "model": "Cube",
+      "position": { "x": -5, "y": 2, "z": 100 },
+      "scale": { "x": 2, "y": 4, "z": 200 },
+      "color": "#B22222",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Right Scenery Train",
+      "model": "Cube",
+      "position": { "x": 5, "y": 2, "z": 100 },
+      "scale": { "x": 2, "y": 4, "z": 200 },
+      "color": "#4682B4",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.75, "z": 60 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF4500",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.75, "z": 80 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF4500",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 0.75, "z": 90 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF4500",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 65 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 67 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 69 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 71 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 73 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 95 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 97 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 99 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 101 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 103 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Parked Train Obstacle",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 1.5, "z": 150 },
+      "scale": { "x": 2, "y": 3, "z": 80 },
+      "color": "#FFD700",
+      "start_timestamp": 8.0,
+      "end_timestamp": 18.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.75, "z": 20 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF0000",
+      "start_timestamp": 16.0,
+      "end_timestamp": 26.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1.5, "z": 100 },
+      "scale": { "x": 2, "y": 3, "z": 15 },
+      "color": "#FF0000",
+      "start_timestamp": 16.0,
+      "end_timestamp": 26.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 1.5, "z": 150 },
+      "scale": { "x": 2, "y": 3, "z": 15 },
+      "color": "#FF0000",
+      "start_timestamp": 16.0,
+      "end_timestamp": 26.0
+    },
+    {
+      "name": "Passing Train",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 1.5, "z": 25 },
+      "scale": { "x": 2, "y": 3, "z": 80 },
+      "color": "#FF0000",
+      "start_timestamp": 16.0,
+      "end_timestamp": 26.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": -2.5, "y": 1, "z": 40 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 16.0,
+      "end_timestamp": 26.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": -2.5, "y": 1, "z": 42 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 16.0,
+      "end_timestamp": 26.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": -2.5, "y": 1, "z": 44 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 16.0,
+      "end_timestamp": 26.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": -2.5, "y": 1, "z": 46 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 16.0,
+      "end_timestamp": 26.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": -2.5, "y": 1, "z": 48 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 16.0,
+      "end_timestamp": 26.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": -2.5, "y": 1, "z": 50 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 16.0,
+      "end_timestamp": 26.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 1.5, "z": 200 },
+      "scale": { "x": 2, "y": 3, "z": 15 },
+      "color": "#DC143C",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1.5, "z": 220 },
+      "scale": { "x": 2, "y": 3, "z": 15 },
+      "color": "#DC143C",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Parked Train Obstacle",
+      "model": "Cube",
+      "position": { "x": -5, "y": 1.5, "z": 100 },
+      "scale": { "x": 2, "y": 3, "z": 200 },
+      "color": "#B22222",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Parked Train Obstacle",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 1.5, "z": 80 },
+      "scale": { "x": 2, "y": 3, "z": 100 },
+      "color": "#1E90FF",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 50 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 52 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 54 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 56 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 58 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Tunnel Entrance",
+      "model": "Cube",
+      "position": { "x": 0, "y": 3, "z": 150 },
+      "scale": { "x": 10, "y": 6, "z": 5 },
+      "color": "#8B4513",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 0.75, "z": 148 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF0000",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 0.75, "z": 148 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF0000",
+      "start_timestamp": 24.0,
+      "end_timestamp": 34.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 0.75, "z": 10 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF0000",
+      "start_timestamp": 32.0,
+      "end_timestamp": 42.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 0.75, "z": 10 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF0000",
+      "start_timestamp": 32.0,
+      "end_timestamp": 42.0
+    },
+    {
+      "name": "Tunnel",
+      "model": "Cube",
+      "position": { "x": 0, "y": 3, "z": 35 },
+      "scale": { "x": 10, "y": 6, "z": 50 },
+      "color": "#A9A9A9",
+      "start_timestamp": 32.0,
+      "end_timestamp": 42.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1.75, "z": 50 },
+      "scale": { "x": 2.2, "y": 3.5, "z": 20 },
+      "color": "#FF6347",
+      "start_timestamp": 32.0,
+      "end_timestamp": 42.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 20 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 32.0,
+      "end_timestamp": 42.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 22 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 32.0,
+      "end_timestamp": 42.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 24 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 32.0,
+      "end_timestamp": 42.0
+    },
+    {
+      "name": "Powerup-S",
+      "model": "Sphere",
+      "position": { "x": 0, "y": 1.5, "z": 70 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#00FF00",
+      "start_timestamp": 32.0,
+      "end_timestamp": 42.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1.75, "z": 90 },
+      "scale": { "x": 2.2, "y": 3.5, "z": 20 },
+      "color": "#FF6347",
+      "start_timestamp": 32.0,
+      "end_timestamp": 42.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1.75, "z": 80 },
+      "scale": { "x": 2.2, "y": 3.5, "z": 20 },
+      "color": "#DC143C",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Powerup-S",
+      "model": "Sphere",
+      "position": { "x": 0, "y": 1.5, "z": 40 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#32CD32",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 60 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 62 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 64 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 66 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 68 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 70 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 72 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 1, "z": 74 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 76 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1, "z": 78 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Parked Cargo Train",
+      "model": "Cube",
+      "position": { "x": -4, "y": 2, "z": 100 },
+      "scale": { "x": 2, "y": 4, "z": 80 },
+      "color": "#4682B4",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Parked Cargo Train",
+      "model": "Cube",
+      "position": { "x": 4, "y": 2, "z": 100 },
+      "scale": { "x": 2, "y": 4, "z": 80 },
+      "color": "#FF8C00",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Parked Cargo Train",
+      "model": "Cube",
+      "position": { "x": 0, "y": 2, "z": 120 },
+      "scale": { "x": 2, "y": 4, "z": 30 },
+      "color": "#4682B4",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Tunnel Wall Left",
+      "model": "Cube",
+      "position": { "x": -6, "y": 4, "z": 200 },
+      "scale": { "x": 2, "y": 8, "z": 100 },
+      "color": "#8B4513",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Tunnel Wall Right",
+      "model": "Cube",
+      "position": { "x": 6, "y": 4, "z": 200 },
+      "scale": { "x": 2, "y": 8, "z": 100 },
+      "color": "#8B4513",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Powerup-Magnet",
+      "model": "Capsule",
+      "position": { "x": 0, "y": 1, "z": 150 },
+      "scale": { "x": 0.5, "y": 1, "z": 0.5 },
+      "color": "#FF4500",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 1.75, "z": 250 },
+      "scale": { "x": 2.2, "y": 3.5, "z": 20 },
+      "color": "#4169E1",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 1.75, "z": 250 },
+      "scale": { "x": 2.2, "y": 3.5, "z": 20 },
+      "color": "#4169E1",
+      "start_timestamp": 40.0,
+      "end_timestamp": 50.0
+    },
+    {
+      "name": "Tunnel Wall Left",
+      "model": "Cube",
+      "position": { "x": -6, "y": 4, "z": 300 },
+      "scale": { "x": 2, "y": 8, "z": 100 },
+      "color": "#8B4513",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Tunnel Wall Right",
+      "model": "Cube",
+      "position": { "x": 6, "y": 4, "z": 300 },
+      "scale": { "x": 2, "y": 8, "z": 100 },
+      "color": "#8B4513",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Stationary Train Left",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 2, "z": 290 },
+      "scale": { "x": 2, "y": 4, "z": 60 },
+      "color": "#4682B4",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Stationary Train Right",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 2, "z": 310 },
+      "scale": { "x": 2, "y": 4, "z": 60 },
+      "color": "#4682B4",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Stationary Train Middle Ramp",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1, "z": 275 },
+      "rotation": { "x": -30, "y": 0, "z": 0 },
+      "scale": { "x": 2, "y": 0.2, "z": 15 },
+      "color": "#FFD700",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 1.75, "z": 350 },
+      "scale": { "x": 2.2, "y": 3.5, "z": 20 },
+      "color": "#DC143C",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 0.75, "z": 340 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF0000",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 4, "z": 320 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 4, "z": 322 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 4, "z": 324 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Traffic Light",
+      "model": "Cube",
+      "position": { "x": -3, "y": 5, "z": 260 },
+      "scale": { "x": 0.5, "y": 2, "z": 0.5 },
+      "color": "#000000",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Traffic Light Red",
+      "model": "Sphere",
+      "position": { "x": -3, "y": 5.8, "z": 259.75 },
+      "scale": { "x": 0.3, "y": 0.3, "z": 0.3 },
+      "color": "#FF0000",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Traffic Light Green",
+      "model": "Sphere",
+      "position": { "x": -3, "y": 5.2, "z": 259.75 },
+      "scale": { "x": 0.3, "y": 0.3, "z": 0.3 },
+      "color": "#00FF00",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Lantern",
+      "model": "Cube",
+      "position": { "x": -5.5, "y": 4, "z": 270 },
+      "scale": { "x": 0.5, "y": 1, "z": 0.5 },
+      "color": "#FFD700",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Lantern",
+      "model": "Cube",
+      "position": { "x": 5.5, "y": 4, "z": 280 },
+      "scale": { "x": 0.5, "y": 1, "z": 0.5 },
+      "color": "#FFD700",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Lantern",
+      "model": "Cube",
+      "position": { "x": 5.5, "y": 4, "z": 280 },
+      "scale": { "x": 0.5, "y": 1, "z": 0.5 },
+      "color": "#FFD700",
+      "start_timestamp": 48.0,
+      "end_timestamp": 58.0
+    },
+    {
+      "name": "Tunnel Wall Left",
+      "model": "Cube",
+      "position": { "x": -5, "y": 4, "z": 50 },
+      "scale": { "x": 2, "y": 8, "z": 100 },
+      "color": "#8B4513",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Tunnel Wall Right",
+      "model": "Cube",
+      "position": { "x": 5, "y": 4, "z": 50 },
+      "scale": { "x": 2, "y": 8, "z": 100 },
+      "color": "#8B4513",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Stationary Train Left",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 2, "z": 40 },
+      "scale": { "x": 2, "y": 4, "z": 80 },
+      "color": "#B22222",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Stationary Train Middle",
+      "model": "Cube",
+      "position": { "x": 0, "y": 2, "z": 60 },
+      "scale": { "x": 2, "y": 4, "z": 120 },
+      "color": "#4682B4",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 4.5, "z": 20 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 4.5, "z": 22 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 4.5, "z": 24 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 4.5, "z": 35 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 4.5, "z": 37 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 0.75, "z": 30 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF0000",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Powerup-Magnet",
+      "model": "Capsule",
+      "position": { "x": 0, "y": 1, "z": 50 },
+      "scale": { "x": 0.5, "y": 1, "z": 0.5 },
+      "color": "#FF4500",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Traffic Light",
+      "model": "Cube",
+      "position": { "x": 1, "y": 4, "z": 80 },
+      "scale": { "x": 0.5, "y": 2, "z": 0.5 },
+      "color": "#000000",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Traffic Light Red",
+      "model": "Sphere",
+      "position": { "x": 1, "y": 4.8, "z": 79.75 },
+      "scale": { "x": 0.3, "y": 0.3, "z": 0.3 },
+      "color": "#FF0000",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Traffic Light Green",
+      "model": "Sphere",
+      "position": { "x": 1, "y": 4.2, "z": 79.75 },
+      "scale": { "x": 0.3, "y": 0.3, "z": 0.3 },
+      "color": "#00FF00",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": 0, "y": 0.75, "z": 78 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF0000",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Building Left",
+      "model": "Cube",
+      "position": { "x": -7, "y": 5, "z": 150 },
+      "scale": { "x": 4, "y": 10, "z": 100 },
+      "color": "#DEB887",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Building Right",
+      "model": "Cube",
+      "position": { "x": 7, "y": 5, "z": 150 },
+      "scale": { "x": 4, "y": 10, "z": 100 },
+      "color": "#5F9EA0",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Stationary Train with Ramp",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1, "z": 150 },
+      "scale": { "x": 2, "y": 2, "z": 40 },
+      "color": "#4682B4",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Ramp",
+      "model": "Cube",
+      "position": { "x": 0, "y": 2.1, "z": 135 },
+      "rotation": { "x": -20, "y": 0, "z": 0 },
+      "scale": { "x": 2, "y": 0.2, "z": 15 },
+      "color": "#FFA500",
+      "start_timestamp": 56.0,
+      "end_timestamp": 66.0
+    },
+    {
+      "name": "Stationary Train Left",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 2, "z": 40 },
+      "scale": { "x": 2, "y": 4, "z": 80 },
+      "color": "#DC143C",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Stationary Train Right",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 2, "z": 60 },
+      "scale": { "x": 2, "y": 4, "z": 120 },
+      "color": "#2F4F4F",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Ramped Train",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1, "z": 10 },
+      "scale": { "x": 2, "y": 2, "z": 20 },
+      "color": "#4682B4",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Ramp",
+      "model": "Cube",
+      "position": { "x": 0, "y": 2.1, "z": -5 },
+      "rotation": { "x": -20, "y": 0, "z": 0 },
+      "scale": { "x": 2, "y": 0.2, "z": 10 },
+      "color": "#FF8C00",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1.75, "z": 50 },
+      "scale": { "x": 2.2, "y": 3.5, "z": 20 },
+      "color": "#FF4500",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 1.75, "z": 80 },
+      "scale": { "x": 2.2, "y": 3.5, "z": 20 },
+      "color": "#B22222",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Stationary Train with Ramp",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1, "z": 100 },
+      "scale": { "x": 2, "y": 2, "z": 40 },
+      "color": "#1E90FF",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Ramp",
+      "model": "Cube",
+      "position": { "x": 0, "y": 2.1, "z": 85 },
+      "rotation": { "x": -20, "y": 0, "z": 0 },
+      "scale": { "x": 2, "y": 0.2, "z": 15 },
+      "color": "#FFA500",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 4.5, "z": 30 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 4.5, "z": 32 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 4.5, "z": 34 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 2.5, "y": 4.5, "z": 36 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 1.5, "z": 88 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 2.0, "z": 90 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 2.5, "z": 92 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 3, "z": 94 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Building Left",
+      "model": "Cube",
+      "position": { "x": -8, "y": 6, "z": 80 },
+      "scale": { "x": 6, "y": 12, "z": 160 },
+      "color": "#A0522D",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Building Right",
+      "model": "Cube",
+      "position": { "x": 8, "y": 6, "z": 80 },
+      "scale": { "x": 6, "y": 12, "z": 160 },
+      "color": "#D2B48C",
+      "start_timestamp": 64.0,
+      "end_timestamp": 74.0
+    },
+    {
+      "name": "Ramp Train",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1, "z": 40 },
+      "scale": { "x": 2, "y": 2, "z": 60 },
+      "color": "#87CEEB",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Ramp",
+      "model": "Cube",
+      "position": { "x": 0, "y": 2.1, "z": 20 },
+      "rotation": { "x": -25, "y": 0, "z": 0 },
+      "scale": { "x": 2, "y": 0.2, "z": 20 },
+      "color": "#FFA500",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Oncoming Train",
+      "model": "Cube",
+      "position": { "x": 2.5, "y": 1.75, "z": 90 },
+      "scale": { "x": 2.2, "y": 3.5, "z": 20 },
+      "color": "#DC143C",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Stationary Train",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 1.75, "z": 120 },
+      "scale": { "x": 2.2, "y": 3.5, "z": 50 },
+      "color": "#4682B4",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 3.5, "z": 25 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 3.5, "z": 28 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 3.5, "z": 31 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Sand Ground",
+      "model": "Plane",
+      "position": { "x": 0, "y": 0.01, "z": 250 },
+      "scale": { "x": 20, "y": 1, "z": 200 },
+      "color": "#F4A460",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Palm Tree Trunk",
+      "model": "Cylinder",
+      "position": { "x": -6, "y": 4, "z": 200 },
+      "scale": { "x": 0.5, "y": 8, "z": 0.5 },
+      "color": "#8B4513",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Palm Tree Leaves",
+      "model": "Sphere",
+      "position": { "x": -6, "y": 8, "z": 200 },
+      "scale": { "x": 3, "y": 3, "z": 3 },
+      "color": "#228B22",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Beach Umbrella Pole",
+      "model": "Cylinder",
+      "position": { "x": 5, "y": 1.5, "z": 220 },
+      "scale": { "x": 0.1, "y": 3, "z": 0.1 },
+      "color": "#D2B48C",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Beach Umbrella Top",
+      "model": "Cylinder",
+      "position": { "x": 5, "y": 3, "z": 220 },
+      "scale": { "x": 3, "y": 0.2, "z": 3 },
+      "color": "#DB7093",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Powerup-Jetpack",
+      "model": "Capsule",
+      "position": { "x": 0, "y": 1.2, "z": 180 },
+      "scale": { "x": 0.8, "y": 0.8, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Jetpack Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 2, "z": 190 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Jetpack Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 3, "z": 193 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Jetpack Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 4, "z": 196 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Jetpack Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 5, "z": 199 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Jetpack Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 5, "z": 202 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Jetpack Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 4, "z": 205 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Jetpack Coin",
+      "model": "Cylinder",
+      "position": { "x": 0, "y": 3, "z": 208 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.8, "y": 0.1, "z": 0.8 },
+      "color": "#FFD700",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    },
+    {
+      "name": "Barrier",
+      "model": "Cube",
+      "position": { "x": -2.5, "y": 0.75, "z": 250 },
+      "scale": { "x": 1.8, "y": 1.5, "z": 0.5 },
+      "color": "#FF0000",
+      "start_timestamp": 72.0,
+      "end_timestamp": 82.0
+    }
+  ]
+}

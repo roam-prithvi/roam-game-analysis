@@ -1,0 +1,229 @@
+{
+  "scene": {
+    "name": "Mob Control Fortress Approach",
+    "description": "A new level begins with a large mob of blue units at the bottom of a canyon, facing a large red fortress. The fortress is being defended by projectiles fired from off-screen. During the transition to this level, rewards from the previous victory, including gold coins and blue cubes, rain down from the sky."
+  },
+  "objects": [
+    {
+      "name": "Ground",
+      "model": "Plane",
+      "position": { "x": 0, "y": 0, "z": 10 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 20, "y": 1, "z": 30 },
+      "color": "#D2B48C",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Fortress_Base",
+      "model": "Cube",
+      "position": { "x": 0, "y": 1, "z": 12 },
+      "scale": { "x": 10, "y": 2, "z": 6 },
+      "color": "#F08080",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Fortress_Main",
+      "model": "Cube",
+      "position": { "x": 0, "y": 3, "z": 12 },
+      "scale": { "x": 6, "y": 2, "z": 5 },
+      "color": "#CD5C5C",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Fortress_Left_Wing",
+      "model": "Cube",
+      "position": { "x": -4, "y": 2.5, "z": 12 },
+      "scale": { "x": 3, "y": 3, "z": 4 },
+      "color": "#CD5C5C",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Fortress_Right_Wing",
+      "model": "Cube",
+      "position": { "x": 4, "y": 2.5, "z": 12 },
+      "scale": { "x": 3, "y": 3, "z": 4 },
+      "color": "#CD5C5C",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Crenellation1",
+      "model": "Cube",
+      "position": { "x": -2, "y": 4.5, "z": 12 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#BC4A4A",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Crenellation2",
+      "model": "Cube",
+      "position": { "x": 0, "y": 4.5, "z": 12 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#BC4A4A",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Crenellation3",
+      "model": "Cube",
+      "position": { "x": 2, "y": 4.5, "z": 12 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#BC4A4A",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Side_Wall_Left",
+      "model": "Cube",
+      "position": { "x": -8, "y": 1.5, "z": 8 },
+      "scale": { "x": 2, "y": 3, "z": 25 },
+      "color": "#B08C6A",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Side_Wall_Right",
+      "model": "Cube",
+      "position": { "x": 8, "y": 1.5, "z": 8 },
+      "scale": { "x": 2, "y": 3, "z": 25 },
+      "color": "#B08C6A",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "PlayerMob_1",
+      "model": "Capsule",
+      "position": { "x": 0, "y": 0.5, "z": 2 },
+      "scale": { "x": 0.4, "y": 0.5, "z": 0.4 },
+      "color": "#4169E1",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "PlayerMob_2",
+      "model": "Capsule",
+      "position": { "x": 1, "y": 0.5, "z": 2 },
+      "scale": { "x": 0.4, "y": 0.5, "z": 0.4 },
+      "color": "#4169E1",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "PlayerMob_3",
+      "model": "Capsule",
+      "position": { "x": -1, "y": 0.5, "z": 2 },
+      "scale": { "x": 0.4, "y": 0.5, "z": 0.4 },
+      "color": "#4169E1",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "PlayerMob_4",
+      "model": "Capsule",
+      "position": { "x": -2, "y": 0.5, "z": 2.5 },
+      "scale": { "x": 0.4, "y": 0.5, "z": 0.4 },
+      "color": "#4169E1",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "PlayerMob_5",
+      "model": "Capsule",
+      "position": { "x": 2, "y": 0.5, "z": 2.5 },
+      "scale": { "x": 0.4, "y": 0.5, "z": 0.4 },
+      "color": "#4169E1",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "PlayerMob_6",
+      "model": "Capsule",
+      "position": { "x": 0, "y": 0.5, "z": 3 },
+      "scale": { "x": 0.4, "y": 0.5, "z": 0.4 },
+      "color": "#4169E1",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Flagpole_Left",
+      "model": "Cylinder",
+      "position": { "x": -5, "y": 0.5, "z": 1 },
+      "scale": { "x": 0.1, "y": 1, "z": 0.1 },
+      "color": "#000000",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Flag_Left",
+      "model": "Quad",
+      "position": { "x": -5, "y": 1, "z": 1 },
+      "rotation": { "x": 0, "y": -20, "z": 0 },
+      "scale": { "x": 1, "y": 0.5, "z": 1 },
+      "color": "#FF0000",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Flagpole_Right",
+      "model": "Cylinder",
+      "position": { "x": 5, "y": 0.5, "z": 1 },
+      "scale": { "x": 0.1, "y": 1, "z": 0.1 },
+      "color": "#000000",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Flag_Right",
+      "model": "Quad",
+      "position": { "x": 5, "y": 1, "z": 1 },
+      "rotation": { "x": 0, "y": 20, "z": 0 },
+      "scale": { "x": 1, "y": 0.5, "z": 1 },
+      "color": "#FF0000",
+      "start_timestamp": 35.0,
+      "end_timestamp": 42.992
+    },
+    {
+      "name": "Reward_Coin_1",
+      "model": "Cylinder",
+      "position": { "x": -1, "y": 6, "z": 12 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.5, "y": 0.1, "z": 0.5 },
+      "color": "#FFD700",
+      "start_timestamp": 35.0,
+      "end_timestamp": 39.0
+    },
+    {
+      "name": "Reward_Coin_2",
+      "model": "Cylinder",
+      "position": { "x": 1, "y": 7, "z": 12 },
+      "rotation": { "x": 90, "y": 0, "z": 0 },
+      "scale": { "x": 0.5, "y": 0.1, "z": 0.5 },
+      "color": "#FFD700",
+      "start_timestamp": 35.0,
+      "end_timestamp": 39.0
+    },
+    {
+      "name": "Reward_Cube_1",
+      "model": "Cube",
+      "position": { "x": 0, "y": 8, "z": 12 },
+      "scale": { "x": 0.4, "y": 0.4, "z": 0.4 },
+      "color": "#1E90FF",
+      "start_timestamp": 35.0,
+      "end_timestamp": 39.0
+    },
+    {
+      "name": "Enemy_Projectile_1",
+      "model": "Cube",
+      "position": { "x": 9, "y": 1, "z": 9 },
+      "scale": { "x": 0.5, "y": 0.5, "z": 0.5 },
+      "color": "#DC143C",
+      "start_timestamp": 39.0,
+      "end_timestamp": 42.992
+    }
+  ]
+}

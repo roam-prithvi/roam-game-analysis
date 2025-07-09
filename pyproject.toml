@@ -161,6 +161,7 @@ dependencies = [
     "seaborn>=0.13.0",
     "opencv-python-headless>=4.7.0",
     "modal>=0.75.6",
+    "chardet>=5.2.0",
 ]
 
 [build-system]

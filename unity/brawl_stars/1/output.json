@@ -1,0 +1,192 @@
+{
+  "scene": {
+    "name": "Brawl Stars Desert Map",
+    "description": "A representation of a desert-themed map from Brawl Stars, based on video clip from timestamp 85.0 to 95.0. Features destructible power-up boxes, bushes, cacti, and complex wall formations."
+  },
+  "objects": [
+    {
+      "name": "Ground_Plane",
+      "model": "Plane",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 40, "y": 1, "z": 40 },
+      "color": "#D2B48C",
+      "text": "Ground",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Player_EpicRut",
+      "model": "Capsule",
+      "position": { "x": -0.5, "y": 0.5, "z": 1.5 },
+      "scale": { "x": 0.7, "y": 0.7, "z": 0.7 },
+      "color": "#1E90FF",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Player_KU-RRO",
+      "model": "Capsule",
+      "position": { "x": -1, "y": 0.5, "z": 6 },
+      "scale": { "x": 0.7, "y": 0.7, "z": 0.7 },
+      "color": "#DC143C",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "PowerUpBox_Center",
+      "model": "Cube",
+      "position": { "x": 1.5, "y": 0.5, "z": 5.5 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "color": "#FFD700",
+      "start_timestamp": 85.0,
+      "end_timestamp": 87.0
+    },
+    {
+      "name": "Wall_Center_C_Top",
+      "model": "Cube",
+      "position": { "x": 1.5, "y": 0.75, "z": 9 },
+      "scale": { "x": 8, "y": 1.5, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Wall_Center_C_Left",
+      "model": "Cube",
+      "position": { "x": -2, "y": 0.75, "z": 6.5 },
+      "scale": { "x": 1.5, "y": 1.5, "z": 3 },
+      "color": "#CD853F",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Wall_Center_C_Right",
+      "model": "Cube",
+      "position": { "x": 5, "y": 0.75, "z": 6.5 },
+      "scale": { "x": 1.5, "y": 1.5, "z": 3 },
+      "color": "#CD853F",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Bush_Patch_Center_Horizontal",
+      "model": "Cube",
+      "position": { "x": 1, "y": 0.1, "z": 2 },
+      "scale": { "x": 16, "y": 0.2, "z": 2.5 },
+      "color": "#F0E68C",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Bush_Patch_Top_Left",
+      "model": "Cube",
+      "position": { "x": -6.5, "y": 0.1, "z": 9.5 },
+      "scale": { "x": 6, "y": 0.2, "z": 3 },
+      "color": "#F0E68C",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Bush_Patch_Top_Right",
+      "model": "Cube",
+      "position": { "x": 9, "y": 0.1, "z": 9.5 },
+      "scale": { "x": 6, "y": 0.2, "z": 3 },
+      "color": "#F0E68C",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Wall_TopLeft_L_Vertical",
+      "model": "Cube",
+      "position": { "x": -7, "y": 0.75, "z": 5 },
+      "scale": { "x": 2, "y": 1.5, "z": 5 },
+      "color": "#CD853F",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Wall_TopLeft_L_Horizontal",
+      "model": "Cube",
+      "position": { "x": -5, "y": 0.75, "z": 3 },
+      "scale": { "x": 3, "y": 1.5, "z": 2 },
+      "color": "#CD853F",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+        "name": "Wall_BottomLeft_Corner",
+        "model": "Cube",
+        "position": { "x": -8, "y": 0.75, "z": -1 },
+        "scale": { "x": 4, "y": 1.5, "z": 4 },
+        "color": "#CD853F",
+        "start_timestamp": 85.0,
+        "end_timestamp": 95.0
+      },
+    {
+      "name": "Cactus_Bottom_Large",
+      "model": "Cylinder",
+      "position": { "x": -0.5, "y": 1, "z": -5 },
+      "scale": { "x": 1, "y": 2, "z": 1 },
+      "color": "#2E8B57",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Cactus_Right_Mid",
+      "model": "Cylinder",
+      "position": { "x": 9, "y": 1, "z": 1 },
+      "scale": { "x": 0.8, "y": 1.8, "z": 0.8 },
+      "color": "#2E8B57",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Wall_Right_Barrier_Top",
+      "model": "Cube",
+      "position": { "x": 9, "y": 0.75, "z": 5 },
+      "scale": { "x": 2, "y": 1.5, "z": 4 },
+      "color": "#CD853F",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+      "name": "Wall_Right_Barrier_Bottom",
+      "model": "Cube",
+      "position": { "x": 5, "y": 0.75, "z": -2 },
+      "scale": { "x": 2, "y": 1.5, "z": 4 },
+      "color": "#CD853F",
+      "start_timestamp": 85.0,
+      "end_timestamp": 95.0
+    },
+    {
+        "name": "Bone_Debris_1",
+        "model": "Capsule",
+        "position": { "x": -4, "y": 0.1, "z": 11 },
+        "rotation": { "x": 90, "y": 0, "z": 0},
+        "scale": { "x": 0.2, "y": 0.5, "z": 0.2 },
+        "color": "#F5F5DC",
+        "start_timestamp": 85.0,
+        "end_timestamp": 95.0
+      },
+      {
+        "name": "Bone_Debris_2",
+        "model": "Capsule",
+        "position": { "x": 3, "y": 0.1, "z": 11.5 },
+        "rotation": { "x": 90, "y": 0, "z": 45},
+        "scale": { "x": 0.2, "y": 0.5, "z": 0.2 },
+        "color": "#F5F5DC",
+        "start_timestamp": 85.0,
+        "end_timestamp": 95.0
+      },
+      {
+        "name": "PowerUpBox_Bottom_Left",
+        "model": "Cube",
+        "position": { "x": -6.0, "y": 0.5, "z": -2.0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "color": "#FFD700",
+        "start_timestamp": 85.0,
+        "end_timestamp": 95.0
+      }
+  ]
+}
