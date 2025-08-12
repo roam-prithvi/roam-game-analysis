@@ -1,0 +1,58 @@
+name: Build Windows Binary
+
+on:
+  workflow_dispatch:
+    inputs:
+      py_version:
+        description: 'Python version to use (e.g., 3.10)'
+        required: false
+        default: '3.10'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.py_version }}
+
+      - name: Create project virtual environment and install dependencies
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python -m pip install --upgrade pip
+          if (Test-Path 'requirements.txt') {
+            .\.venv\Scripts\python -m pip install -r requirements.txt
+          }
+          # Ensure pyinstaller is present
+          .\.venv\Scripts\python -m pip install pyinstaller
+
+      - name: Build Windows executable with PyInstaller
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\pyinstaller --onefile --console --name Game_Data_Collector_V1 src/streaming/android_streamer.py
+
+      - name: Normalize artifact path
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist\windows | Out-Null
+          $exe1 = 'dist\\Game_Data_Collector_V1.exe'
+          $exe2 = 'dist\\Game_Data_Collector_V1\\Game_Data_Collector_V1.exe'
+          if (Test-Path $exe1) {
+            Copy-Item $exe1 'dist\\windows\\Game_Data_Collector_V1.exe' -Force
+          } elseif (Test-Path $exe2) {
+            Copy-Item $exe2 'dist\\windows\\Game_Data_Collector_V1.exe' -Force
+          } else {
+            Write-Error 'Windows EXE not found in dist/'; exit 1
+          }
+
+      - name: Upload Windows binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Game_Data_Collector_Windows
+          path: dist/windows/Game_Data_Collector_V1.exe
+          if-no-files-found: error
