@@ -36,10 +36,8 @@ jobs:
           python -m pip uninstall -y pathlib || true
 
       - name: Build macOS executable with PyInstaller
-        env:
-          # Ensure we use the venv's python/pyinstaller
-          PATH: .venv/bin:${{ env.PATH }}
         run: |
+          source .venv/bin/activate
           pyinstaller --onefile --console --name Game_Data_Collector_V1 src/streaming/android_streamer.py
 
       - name: Normalize artifact path
