@@ -2,7 +2,11 @@
 # (build.sh to build the data collector app; it will appear in dist/ folder)
 
 import difflib  # For fuzzy name suggestions
-import fcntl
+try:
+    import fcntl  # POSIX-only; used for non-blocking I/O on Unix-like systems
+    FCNTL_AVAILABLE = True
+except ImportError:
+    FCNTL_AVAILABLE = False
 import os
 import platform
 import re
@@ -24,6 +28,9 @@ ADB_DIR: str = os.path.expanduser(os.path.join("~", "Downloads", "adb"))
 ADB_BIN: str = "adb"  # Will be set to full path after setup
 FFMPEG_DIR: str = os.path.expanduser(os.path.join("~", "Downloads", "ffmpeg"))
 FFMPEG_BIN: str = "ffmpeg"  # Will be set to full path after setup
+
+# Maximum recording duration in seconds (15 minutes)
+RECORD_TIME_LIMIT_SECONDS: int = 900
 
 
 def get_adb_path() -> str:
@@ -150,6 +157,35 @@ ADB_BIN = get_adb_path()
 
 # --- FFmpeg static setup logic ---
 FFMPEG_BIN = get_ffmpeg_path()
+
+# --- Audio capture helper --------------------------------------------
+
+def get_audio_input_ffmpeg_args() -> str:
+    """Return FFmpeg input arguments to capture *system microphone* on host.
+
+    Returns an empty string if the platform is unsupported or the user does
+    not want audio. Currently supports:
+    - macOS:  avfoundation default audio (index 0)
+    - Windows: dshow default capture device via "virtual-audio-capturer"
+    - Linux: PulseAudio default source
+    """
+    sys_os: str = platform.system().lower()
+
+    if sys_os == "darwin":
+        # Use the default audio device; index 0 refers to the first audio input.
+        # Note: User can list devices with:
+        #   ffmpeg -f avfoundation -list_devices true -i ""
+        return "-f avfoundation -i \":0\""
+    elif sys_os == "windows":
+        # Requires the virtual-audio-capturer device from the \n        # https://github.com/rdp/screen-capture-recorder-to-video-windows-free project.
+        # Users may need to install this device manually.
+        return "-f dshow -i audio=\"virtual-audio-capturer\""
+    elif sys_os == "linux":
+        # PulseAudio default source (requires FFmpeg built with --enable-libpulse)
+        return "-f pulse -i default"
+    else:
+        return ""  # Unsupported platform or cannot determine device
+
 
 EVENT_LOG_FILE = "touch_events.log"  # The file where raw touch events will be saved
 VIDEO_OUTPUT_FILE = "screen_recording.mp4"  # The file where video will be saved
@@ -750,11 +786,19 @@ def main() -> None:
         )
 
         # --- Video Stream ---
-        # Build video command with proper resolution if available
-        ffmpeg_base = (
-            f"{shlex.quote(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
-            "-f h264 -i - -c copy"
-        )
+        # Build FFmpeg base command depending on whether we can record audio
+        audio_args = get_audio_input_ffmpeg_args()
+        if audio_args:
+            ffmpeg_base = (
+                f"{shlex.quote(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
+                "-f h264 -i - "
+                f"{audio_args} -shortest -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac"
+            )
+        else:
+            ffmpeg_base = (
+                f"{shlex.quote(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
+                "-f h264 -i - -c copy"
+            )
 
         # Quote the output path in case it contains spaces or special chars.
         quoted_output_file = shlex.quote(VIDEO_OUTPUT_FILE)
@@ -762,12 +806,12 @@ def main() -> None:
         if screen_width and screen_height:
             video_command = (
                 f"{ADB_BIN} shell screenrecord --size {screen_width}x{screen_height} "
-                f"--output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
+                f"--time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
             )
             print(f"🎥 Recording at {screen_width}x{screen_height} resolution")
         else:
             video_command = (
-                f"{ADB_BIN} shell screenrecord --output-format=h264 - "
+                f"{ADB_BIN} shell screenrecord --time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - "
                 f"| {ffmpeg_base} {quoted_output_file}"
             )
             print("🎥 Recording at default resolution")
@@ -823,10 +867,13 @@ def main() -> None:
         signal_handler(None, None)
         return
 
-    # Set event stream to non-blocking for the main loop
-    fd = event_process.stdout.fileno()
-    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+    # Set event stream to non-blocking for the main loop (Unix-like systems only)
+    if FCNTL_AVAILABLE:
+        fd = event_process.stdout.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+    else:
+        print("ℹ️ Non-blocking stream not available on this OS; continuing in blocking mode")
 
     print("\n=========================================================")
     print(

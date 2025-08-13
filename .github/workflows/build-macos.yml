@@ -1,0 +1,59 @@
+name: Build macOS Binary
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      py_version:
+        description: 'Python version to use (e.g., 3.10)'
+        required: false
+        default: '3.10'
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.py_version }}
+
+      - name: Create project virtual environment and install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            python -m pip install -r requirements.txt
+          fi
+          # Ensure pyinstaller is present
+          python -m pip install pyinstaller
+
+      - name: Build macOS executable with PyInstaller
+        env:
+          # Ensure we use the venv's python/pyinstaller
+          PATH: .venv/bin:${{ env.PATH }}
+        run: |
+          pyinstaller --onefile --console --name Game_Data_Collector_V1 src/streaming/android_streamer.py
+
+      - name: Normalize artifact path
+        run: |
+          mkdir -p dist/mac
+          if [ -f dist/Game_Data_Collector_V1 ]; then
+            mv -f dist/Game_Data_Collector_V1 dist/mac/Game_Data_Collector_V1
+          elif [ -f dist/Game_Data_Collector_V1/Game_Data_Collector_V1 ]; then
+            mv -f dist/Game_Data_Collector_V1/Game_Data_Collector_V1 dist/mac/Game_Data_Collector_V1
+          else
+            echo 'macOS binary not found in dist/'; exit 1
+          fi
+
+      - name: Upload macOS binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Game_Data_Collector_macOS
+          path: dist/mac/Game_Data_Collector_V1
+          if-no-files-found: error
