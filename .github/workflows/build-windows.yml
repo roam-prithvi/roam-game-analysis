@@ -32,6 +32,8 @@ jobs:
           }
           # Ensure pyinstaller is present
           .\.venv\Scripts\python -m pip install pyinstaller
+          # Remove pathlib backport if present
+          .\.venv\Scripts\python -m pip uninstall -y pathlib || exit 0
 
       - name: Build Windows executable with PyInstaller
         shell: pwsh

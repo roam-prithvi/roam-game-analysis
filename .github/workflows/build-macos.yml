@@ -32,6 +32,8 @@ jobs:
           fi
           # Ensure pyinstaller is present
           python -m pip install pyinstaller
+          # Remove pathlib backport because it conflicts with PyInstaller
+          python -m pip uninstall -y pathlib || true
 
       - name: Build macOS executable with PyInstaller
         env:
