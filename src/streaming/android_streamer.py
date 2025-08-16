@@ -158,6 +158,15 @@ ADB_BIN = get_adb_path()
 # --- FFmpeg static setup logic ---
 FFMPEG_BIN = get_ffmpeg_path()
 
+# --- Ensure adb directory is on PATH for downstream tools like scrcpy ---------
+adb_dir_in_path = os.path.dirname(ADB_BIN)
+current_path = os.environ.get("PATH", "")
+if adb_dir_in_path and adb_dir_in_path not in current_path.split(os.pathsep):
+    os.environ["PATH"] = f"{adb_dir_in_path}{os.pathsep}{current_path}"
+
+# Explicit variable so scrcpy can find it even if PATH tricks fail
+os.environ["ADB"] = ADB_BIN
+
 # --- Audio capture helper --------------------------------------------
 
 def get_audio_input_ffmpeg_args() -> str:
@@ -310,11 +319,16 @@ def find_touchscreen_device() -> str:
                 continue
 
             # Check for the required characteristics
-            is_touchscreen = "touchscreen" in block.lower()
+            # Some OEMs label the touch device without the literal word "touchscreen" (e.g. "goodix_ts").
+            name_match = re.search(r'name:\s+"([^"]+)"', block, re.IGNORECASE)
+            dev_name = name_match.group(1).lower() if name_match else ""
+            keywords = ("touchscreen", "touch", "ts", "goodix", "synaptics", "fts")
             has_abs_mt_x = "ABS_MT_POSITION_X" in block
             has_abs_mt_y = "ABS_MT_POSITION_Y" in block
+            is_touchscreen = any(k in dev_name for k in keywords)
 
-            if is_touchscreen and has_abs_mt_x and has_abs_mt_y:
+            # Accept if either heuristic matches and the ABS coordinates are present
+            if (is_touchscreen or (has_abs_mt_x and has_abs_mt_y)) and has_abs_mt_x and has_abs_mt_y:
                 # Extract the device path from the first line of the block
                 # Format is typically: " 7: /dev/input/event11"
                 lines = block.strip().split("\n")
@@ -786,35 +800,50 @@ def main() -> None:
         )
 
         # --- Video Stream ---
-        # Build FFmpeg base command depending on whether we can record audio
-        audio_args = get_audio_input_ffmpeg_args()
-        if audio_args:
-            ffmpeg_base = (
-                f"{shlex.quote(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
-                "-f h264 -i - "
-                f"{audio_args} -shortest -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac"
-            )
-        else:
-            ffmpeg_base = (
-                f"{shlex.quote(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
-                "-f h264 -i - -c copy"
-            )
+        # Prefer scrcpy on macOS (or other OS) if available: it can record **internal device audio**.
+        scrcpy_bin = shutil.which("scrcpy")
+        use_scrcpy = scrcpy_bin is not None and platform.system().lower() == "darwin"
 
-        # Quote the output path in case it contains spaces or special chars.
+        # Prepare quoted output path (may contain spaces)
         quoted_output_file = shlex.quote(VIDEO_OUTPUT_FILE)
 
-        if screen_width and screen_height:
+        if use_scrcpy:
+            # scrcpy records on-device encoded video *and* audio, muxed on host.
+            # --no-playback disables live window; --no-control avoids input capture.
+            # We keep --no-window to avoid spawning GUI windows in the packaged app.
             video_command = (
-                f"{ADB_BIN} shell screenrecord --size {screen_width}x{screen_height} "
-                f"--time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
+                f"{shlex.quote(scrcpy_bin)} --no-playback --no-control --no-window "
+                f"--audio-codec=aac --record={quoted_output_file} "
+                f"--time-limit={RECORD_TIME_LIMIT_SECONDS}"
             )
-            print(f"🎥 Recording at {screen_width}x{screen_height} resolution")
+            print("🎥 Recording via scrcpy with internal device audio")
         else:
-            video_command = (
-                f"{ADB_BIN} shell screenrecord --time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - "
-                f"| {ffmpeg_base} {quoted_output_file}"
-            )
-            print("🎥 Recording at default resolution")
+            # Fallback to adb screenrecord piped to FFmpeg plus optional host-audio capture.
+            audio_args = get_audio_input_ffmpeg_args()
+            if audio_args:
+                ffmpeg_base = (
+                    f"{shlex.quote(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
+                    "-f h264 -i - "
+                    f"{audio_args} -shortest -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac"
+                )
+            else:
+                ffmpeg_base = (
+                    f"{shlex.quote(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
+                    "-f h264 -i - -c copy"
+                )
+
+            if screen_width and screen_height:
+                video_command = (
+                    f"{ADB_BIN} shell screenrecord --size {screen_width}x{screen_height} "
+                    f"--time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
+                )
+                print(f"🎥 Recording at {screen_width}x{screen_height} resolution")
+            else:
+                video_command = (
+                    f"{ADB_BIN} shell screenrecord --time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - "
+                    f"| {ffmpeg_base} {quoted_output_file}"
+                )
+                print("🎥 Recording at default resolution (fallback)")
 
         # Prepare video error log
         video_log_file = open(VIDEO_ERROR_LOG_FILE, "a")

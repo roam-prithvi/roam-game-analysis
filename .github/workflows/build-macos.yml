@@ -38,22 +38,22 @@ jobs:
       - name: Build macOS executable with PyInstaller
         run: |
           source .venv/bin/activate
-          pyinstaller --onefile --console --name Game_Data_Collector_V1 src/streaming/android_streamer.py
+          pyinstaller --windowed --name Game_Data_Collector_V1 src/streaming/android_streamer.py
 
       - name: Normalize artifact path
         run: |
           mkdir -p dist/mac
-          if [ -f dist/Game_Data_Collector_V1 ]; then
-            mv -f dist/Game_Data_Collector_V1 dist/mac/Game_Data_Collector_V1
-          elif [ -f dist/Game_Data_Collector_V1/Game_Data_Collector_V1 ]; then
-            mv -f dist/Game_Data_Collector_V1/Game_Data_Collector_V1 dist/mac/Game_Data_Collector_V1
+          if [ -d dist/Game_Data_Collector_V1.app ]; then
+            mv -f dist/Game_Data_Collector_V1.app dist/mac/Game_Data_Collector_V1.app
           else
-            echo 'macOS binary not found in dist/'; exit 1
+            echo 'macOS .app bundle not found in dist/'; exit 1
           fi
+          # Zip the .app for easy download
+          ditto -c -k --sequesterRsrc --keepParent dist/mac/Game_Data_Collector_V1.app dist/mac/Game_Data_Collector_V1.app.zip
 
       - name: Upload macOS binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: Game_Data_Collector_macOS
-          path: dist/mac/Game_Data_Collector_V1
+          path: dist/mac/Game_Data_Collector_V1.app.zip
           if-no-files-found: error

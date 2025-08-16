@@ -25,7 +25,7 @@ need_pyinstaller() {
 build_mac() {
   echo "🛠️  Building macOS binary..."
   need_pyinstaller
-  pyinstaller --onefile --console --name "$APP_NAME" "$ENTRY"
+  pyinstaller --noconfirm --onefile --console --name "$APP_NAME" "$ENTRY"
   mkdir -p "$DIST_DIR/mac"
   if [ -f "$DIST_DIR/$APP_NAME" ]; then
     mv -f "$DIST_DIR/$APP_NAME" "$DIST_DIR/mac/$APP_NAME"
@@ -38,7 +38,7 @@ build_mac() {
 build_windows_native() {
   echo "🛠️  Building Windows binary (native)..."
   need_pyinstaller
-  pyinstaller --onefile --console --name "$APP_NAME" "$ENTRY"
+  pyinstaller --noconfirm --onefile --console --name "$APP_NAME" "$ENTRY"
   mkdir -p "$DIST_DIR/windows"
   if [ -f "$DIST_DIR/$APP_NAME.exe" ]; then
     mv -f "$DIST_DIR/$APP_NAME.exe" "$DIST_DIR/windows/$APP_NAME.exe"
@@ -67,7 +67,7 @@ build_windows_docker() {
     -w /src \
     --platform linux/amd64 \
     cdrx/pyinstaller-windows \
-    "pyinstaller --onefile --console --name $APP_NAME $ENTRY"
+    "pyinstaller --noconfirm --onefile --console --name $APP_NAME $ENTRY"
 
   mkdir -p "$DIST_DIR/windows"
   if [ -f "$DIST_DIR/$APP_NAME.exe" ]; then
