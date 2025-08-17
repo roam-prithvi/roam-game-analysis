@@ -32,6 +32,10 @@ FFMPEG_BIN: str = "ffmpeg"  # Will be set to full path after setup
 # Maximum recording duration in seconds (15 minutes)
 RECORD_TIME_LIMIT_SECONDS: int = 900
 
+# scrcpy quality settings (lower = less CPU/network)
+SCRCPY_MAX_SIZE: int = 720  # 0 = original; typical: 720 for ~720p
+SCRCPY_MAX_FPS: int = 30   # 0 = device default; 15–30 reduces load
+
 
 def get_adb_path() -> str:
     """Ensure ADB is installed in ~/Downloads/adb and return its path."""
@@ -813,6 +817,7 @@ def main() -> None:
             # We keep --no-window to avoid spawning GUI windows in the packaged app.
             video_command = (
                 f"{shlex.quote(scrcpy_bin)} --no-playback --no-control --no-window "
+                f"--max-size={SCRCPY_MAX_SIZE} --max-fps={SCRCPY_MAX_FPS} "
                 f"--audio-codec=aac --record={quoted_output_file} "
                 f"--time-limit={RECORD_TIME_LIMIT_SECONDS}"
             )
