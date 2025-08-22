@@ -29,8 +29,9 @@ ADB_BIN: str = "adb"  # Will be set to full path after setup
 FFMPEG_DIR: str = os.path.expanduser(os.path.join("~", "Downloads", "ffmpeg"))
 FFMPEG_BIN: str = "ffmpeg"  # Will be set to full path after setup
 
-# Maximum recording duration in seconds (15 minutes)
-RECORD_TIME_LIMIT_SECONDS: int = 900
+# Recording duration limit in seconds.
+# Set to None to record indefinitely (until manually stopped).
+RECORD_TIME_LIMIT_SECONDS: Optional[int] = None
 
 # scrcpy quality settings (lower = less CPU/network)
 SCRCPY_MAX_SIZE: int = 720  # 0 = original; typical: 720 for ~720p
@@ -838,9 +839,9 @@ def main() -> None:
         )
 
         # --- Video Stream ---
-        # Prefer scrcpy on macOS (or other OS) if available: it can record **internal device audio**.
+        # Prefer scrcpy on any OS if available: it can record internal device audio and run indefinitely.
         scrcpy_bin = shutil.which("scrcpy")
-        use_scrcpy = scrcpy_bin is not None and platform.system().lower() == "darwin"
+        use_scrcpy = scrcpy_bin is not None
 
         # Prepare quoted output path (may contain spaces)
         quoted_output_file = quote_arg(VIDEO_OUTPUT_FILE)
@@ -852,9 +853,10 @@ def main() -> None:
             video_command = (
                 f"{quote_arg(scrcpy_bin)} --no-playback --no-control --no-window "
                 f"--max-size={SCRCPY_MAX_SIZE} --max-fps={SCRCPY_MAX_FPS} "
-                f"--audio-codec=aac --record={quoted_output_file} "
-                f"--time-limit={RECORD_TIME_LIMIT_SECONDS}"
+                f"--audio-codec=aac --record={quoted_output_file}"
             )
+            if RECORD_TIME_LIMIT_SECONDS:
+                video_command += f" --time-limit={RECORD_TIME_LIMIT_SECONDS}"
             print("🎥 Recording via scrcpy with internal device audio")
         else:
             # Fallback to adb screenrecord piped to FFmpeg plus optional host-audio capture.
@@ -872,16 +874,29 @@ def main() -> None:
                 )
 
             if screen_width and screen_height:
-                video_command = (
-                    f"{ADB_BIN} shell screenrecord --size {screen_width}x{screen_height} "
-                    f"--time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
-                )
+                if RECORD_TIME_LIMIT_SECONDS:
+                    video_command = (
+                        f"{ADB_BIN} shell screenrecord --size {screen_width}x{screen_height} "
+                        f"--time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
+                    )
+                else:
+                    video_command = (
+                        f"{ADB_BIN} shell screenrecord --size {screen_width}x{screen_height} "
+                        f"--output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
+                    )
                 print(f"🎥 Recording at {screen_width}x{screen_height} resolution")
             else:
-                video_command = (
-                    f"{ADB_BIN} shell screenrecord --time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - "
-                    f"| {ffmpeg_base} {quoted_output_file}"
-                )
+                if RECORD_TIME_LIMIT_SECONDS:
+                    video_command = (
+                        f"{ADB_BIN} shell screenrecord --time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - "
+                        f"| {ffmpeg_base} {quoted_output_file}"
+                    )
+                else:
+                    print("⚠️ Android 'screenrecord' may stop after a few minutes without a time limit. Install scrcpy for unlimited recording.")
+                    video_command = (
+                        f"{ADB_BIN} shell screenrecord --output-format=h264 - "
+                        f"| {ffmpeg_base} {quoted_output_file}"
+                    )
                 print("🎥 Recording at default resolution (fallback)")
 
         # Prepare video error log
