@@ -35,16 +35,9 @@ jobs:
           # Remove pathlib backport if present
           .\.venv\Scripts\python -m pip uninstall -y pathlib || exit 0
 
-      - name: Build Windows executable with PyInstaller
+      - name: Download adb.exe and ffmpeg.exe for bundling
         shell: pwsh
         run: |
-          .\.venv\Scripts\pyinstaller --onedir --noupx --console --name Game_Data_Collector_V1 src/streaming/android_streamer.py
-
-      - name: Bundle adb.exe and ffmpeg.exe into onedir
-        shell: pwsh
-        run: |
-          $distFolder = 'dist\Game_Data_Collector_V1'
-          if (-not (Test-Path $distFolder)) { Write-Error "Onedir folder not found at $distFolder"; exit 1 }
           $tmp = Join-Path $env:RUNNER_TEMP 'roam_tools'
           New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 
@@ -54,7 +47,6 @@ jobs:
           Expand-Archive -Path $adbZip -DestinationPath $tmp -Force
           $adbExe = Get-ChildItem -Path $tmp -Recurse -Filter 'adb.exe' | Select-Object -First 1
           if (-not $adbExe) { Write-Error 'adb.exe not found in downloaded archive'; exit 1 }
-          Copy-Item $adbExe.FullName (Join-Path $distFolder 'adb.exe') -Force
 
           # Download FFmpeg (ffmpeg.exe)
           $ffZip = Join-Path $tmp 'ffmpeg.zip'
@@ -62,21 +54,24 @@ jobs:
           Expand-Archive -Path $ffZip -DestinationPath $tmp -Force
           $ffExe = Get-ChildItem -Path $tmp -Recurse -Filter 'ffmpeg.exe' | Select-Object -First 1
           if (-not $ffExe) { Write-Error 'ffmpeg.exe not found in downloaded archive'; exit 1 }
-          Copy-Item $ffExe.FullName (Join-Path $distFolder 'ffmpeg.exe') -Force
 
-      - name: Package onedir folder into zip
+      - name: Build Windows onefile with PyInstaller (bundled adb/ffmpeg)
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path dist\windows | Out-Null
-          $folder = 'dist\\Game_Data_Collector_V1'
-          if (-not (Test-Path $folder)) { Write-Error "Onedir folder not found at $folder"; exit 1 }
-          $zipPath = 'dist\\windows\\Game_Data_Collector_V1.zip'
-          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-          Compress-Archive -Path $folder -DestinationPath $zipPath -Force
+          $tools = Join-Path $env:RUNNER_TEMP 'roam_tools'
+          $adb = (Get-ChildItem -Path $tools -Recurse -Filter 'adb.exe' | Select-Object -First 1).FullName
+          $ffm = (Get-ChildItem -Path $tools -Recurse -Filter 'ffmpeg.exe' | Select-Object -First 1).FullName
+          if (-not (Test-Path $adb)) { Write-Error 'adb.exe not found for bundling'; exit 1 }
+          if (-not (Test-Path $ffm)) { Write-Error 'ffmpeg.exe not found for bundling'; exit 1 }
 
-      - name: Upload Windows onedir zip artifact
+          .\.venv\Scripts\pyinstaller --onefile --noupx --console --name Game_Data_Collector_V1 `
+            --add-binary "${adb};." `
+            --add-binary "${ffm};." `
+            src/streaming/android_streamer.py
+
+      - name: Upload Windows onefile artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Game_Data_Collector_Windows_onedir
-          path: dist/windows/Game_Data_Collector_V1.zip
+          name: Game_Data_Collector_Windows_onefile
+          path: dist/Game_Data_Collector_V1.exe
           if-no-files-found: error

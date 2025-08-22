@@ -165,12 +165,19 @@ def _find_bundled_tool(exe_win: str, exe_posix: str) -> Optional[str]:
     sys_os = platform.system().lower()
     exe_name = exe_win if sys_os == "windows" else exe_posix
 
-    # Prefer alongside the PyInstaller onedir executable
+    candidates: List[str] = []
+
+    # If running as a PyInstaller onefile/onedir app, first check the extraction dir
+    # In onefile mode, PyInstaller extracts added binaries to sys._MEIPASS
+    meipass_dir = getattr(sys, "_MEIPASS", None)
+    if meipass_dir:
+        candidates.append(os.path.join(meipass_dir, exe_name))
+
+    # Also check alongside the frozen executable (helpful for onedir or manual placement)
     try:
         base_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else None
     except Exception:
         base_dir = None
-    candidates: List[str] = []
     if base_dir:
         candidates.append(os.path.join(base_dir, exe_name))
     # PATH fallback
