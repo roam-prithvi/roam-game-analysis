@@ -38,25 +38,21 @@ jobs:
       - name: Build Windows executable with PyInstaller
         shell: pwsh
         run: |
-          .\.venv\Scripts\pyinstaller --onefile --console --name Game_Data_Collector_V1 src/streaming/android_streamer.py
+          .\.venv\Scripts\pyinstaller --onedir --console --name Game_Data_Collector_V1 src/streaming/android_streamer.py
 
-      - name: Normalize artifact path
+      - name: Package onedir folder into zip
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist\windows | Out-Null
-          $exe1 = 'dist\\Game_Data_Collector_V1.exe'
-          $exe2 = 'dist\\Game_Data_Collector_V1\\Game_Data_Collector_V1.exe'
-          if (Test-Path $exe1) {
-            Copy-Item $exe1 'dist\\windows\\Game_Data_Collector_V1.exe' -Force
-          } elseif (Test-Path $exe2) {
-            Copy-Item $exe2 'dist\\windows\\Game_Data_Collector_V1.exe' -Force
-          } else {
-            Write-Error 'Windows EXE not found in dist/'; exit 1
-          }
+          $folder = 'dist\\Game_Data_Collector_V1'
+          if (-not (Test-Path $folder)) { Write-Error "Onedir folder not found at $folder"; exit 1 }
+          $zipPath = 'dist\\windows\\Game_Data_Collector_V1.zip'
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+          Compress-Archive -Path $folder -DestinationPath $zipPath -Force
 
-      - name: Upload Windows binary artifact
+      - name: Upload Windows onedir zip artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Game_Data_Collector_Windows
-          path: dist/windows/Game_Data_Collector_V1.exe
+          name: Game_Data_Collector_Windows_onedir
+          path: dist/windows/Game_Data_Collector_V1.zip
           if-no-files-found: error

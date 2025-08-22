@@ -173,6 +173,19 @@ os.environ["ADB"] = ADB_BIN
 
 # --- Audio capture helper --------------------------------------------
 
+# Cross-platform quoting for shell commands
+# On Windows, prefer double quotes; on POSIX, defer to shlex.quote
+def quote_arg(arg: str) -> str:
+    sys_os = platform.system().lower()
+    if sys_os == "windows":
+        # Quote only if spaces or special CMD characters present
+        if any(c in arg for c in ' <>|&()^') or " " in arg:
+            return f'"{arg}"'
+        return arg
+    else:
+        return shlex.quote(arg)
+
+
 def get_audio_input_ffmpeg_args() -> str:
     """Return FFmpeg input arguments to capture *system microphone* on host.
 
@@ -309,10 +322,14 @@ def find_touchscreen_device() -> str:
     print("🔎 Searching for touchscreen Android device...")
     try:
         # Run the adb command to list input devices
-        command = f"{ADB_BIN} shell getevent -lp"
-        result = subprocess.run(
-            shlex.split(command), capture_output=True, text=True, check=True
-        )
+        if platform.system().lower() == "windows":
+            cmd = [ADB_BIN, "shell", "getevent", "-lp"]
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        else:
+            command = f"{ADB_BIN} shell getevent -lp"
+            result = subprocess.run(
+                shlex.split(command), capture_output=True, text=True, check=True
+            )
 
         # Split the output into blocks for each device
         # A new device block starts with "add device"
@@ -366,10 +383,17 @@ def get_screen_size() -> Tuple[Optional[int], Optional[int]]:
     """Gets the physical screen size (resolution) of the device."""
     print("📏 Getting screen size...")
     try:
-        command = f"{ADB_BIN} shell wm size"
-        result = subprocess.run(
-            shlex.split(command), capture_output=True, text=True, check=True
-        )
+        # Run the adb command to get screen size
+        if platform.system().lower() == "windows":
+            command_list = [ADB_BIN, "shell", "wm", "size"]
+            result = subprocess.run(
+                command_list, capture_output=True, text=True, check=True
+            )
+        else:
+            command = f"{ADB_BIN} shell wm size"
+            result = subprocess.run(
+                shlex.split(command), capture_output=True, text=True, check=True
+            )
 
         # Find the line with "Physical size:"
         match = re.search(r"Physical size: (\d+)x(\d+)", result.stdout)
@@ -397,10 +421,17 @@ def get_input_device_ranges(
     """
     print(f"📐 Getting coordinate ranges for {device_path}...")
     try:
-        command = f"{ADB_BIN} shell getevent -lp {device_path}"
-        result = subprocess.run(
-            shlex.split(command), capture_output=True, text=True, check=True
-        )
+        # Run the adb command to get device info
+        if platform.system().lower() == "windows":
+            command_list = [ADB_BIN, "shell", "getevent", "-lp", device_path]
+            result = subprocess.run(
+                command_list, capture_output=True, text=True, check=True
+            )
+        else:
+            command = f"{ADB_BIN} shell getevent -lp {device_path}"
+            result = subprocess.run(
+                shlex.split(command), capture_output=True, text=True, check=True
+            )
 
         x_min = x_max = y_min = y_max = None
 
@@ -777,7 +808,10 @@ def main() -> None:
     )
 
     # 3. Start event stream but wait for first touch to start video
-    event_command = shlex.split(f"{ADB_BIN} shell getevent -lt {touch_device}")
+    if platform.system().lower() == "windows":
+        event_command = [ADB_BIN, "shell", "getevent", "-lt", touch_device]
+    else:
+        event_command = shlex.split(f"{ADB_BIN} shell getevent -lt {touch_device}")
     event_process = subprocess.Popen(
         event_command,
         stdout=subprocess.PIPE,
@@ -809,14 +843,14 @@ def main() -> None:
         use_scrcpy = scrcpy_bin is not None and platform.system().lower() == "darwin"
 
         # Prepare quoted output path (may contain spaces)
-        quoted_output_file = shlex.quote(VIDEO_OUTPUT_FILE)
+        quoted_output_file = quote_arg(VIDEO_OUTPUT_FILE)
 
         if use_scrcpy:
             # scrcpy records on-device encoded video *and* audio, muxed on host.
             # --no-playback disables live window; --no-control avoids input capture.
             # We keep --no-window to avoid spawning GUI windows in the packaged app.
             video_command = (
-                f"{shlex.quote(scrcpy_bin)} --no-playback --no-control --no-window "
+                f"{quote_arg(scrcpy_bin)} --no-playback --no-control --no-window "
                 f"--max-size={SCRCPY_MAX_SIZE} --max-fps={SCRCPY_MAX_FPS} "
                 f"--audio-codec=aac --record={quoted_output_file} "
                 f"--time-limit={RECORD_TIME_LIMIT_SECONDS}"
@@ -827,13 +861,13 @@ def main() -> None:
             audio_args = get_audio_input_ffmpeg_args()
             if audio_args:
                 ffmpeg_base = (
-                    f"{shlex.quote(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
+                    f"{quote_arg(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
                     "-f h264 -i - "
                     f"{audio_args} -shortest -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac"
                 )
             else:
                 ffmpeg_base = (
-                    f"{shlex.quote(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
+                    f"{quote_arg(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
                     "-f h264 -i - -c copy"
                 )
 
