@@ -38,7 +38,31 @@ jobs:
       - name: Build Windows executable with PyInstaller
         shell: pwsh
         run: |
-          .\.venv\Scripts\pyinstaller --onedir --console --name Game_Data_Collector_V1 src/streaming/android_streamer.py
+          .\.venv\Scripts\pyinstaller --onedir --noupx --console --name Game_Data_Collector_V1 src/streaming/android_streamer.py
+
+      - name: Bundle adb.exe and ffmpeg.exe into onedir
+        shell: pwsh
+        run: |
+          $distFolder = 'dist\Game_Data_Collector_V1'
+          if (-not (Test-Path $distFolder)) { Write-Error "Onedir folder not found at $distFolder"; exit 1 }
+          $tmp = Join-Path $env:RUNNER_TEMP 'roam_tools'
+          New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+
+          # Download Android platform-tools (adb.exe)
+          $adbZip = Join-Path $tmp 'platform-tools.zip'
+          Invoke-WebRequest -Uri 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip' -OutFile $adbZip
+          Expand-Archive -Path $adbZip -DestinationPath $tmp -Force
+          $adbExe = Get-ChildItem -Path $tmp -Recurse -Filter 'adb.exe' | Select-Object -First 1
+          if (-not $adbExe) { Write-Error 'adb.exe not found in downloaded archive'; exit 1 }
+          Copy-Item $adbExe.FullName (Join-Path $distFolder 'adb.exe') -Force
+
+          # Download FFmpeg (ffmpeg.exe)
+          $ffZip = Join-Path $tmp 'ffmpeg.zip'
+          Invoke-WebRequest -Uri 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip' -OutFile $ffZip
+          Expand-Archive -Path $ffZip -DestinationPath $tmp -Force
+          $ffExe = Get-ChildItem -Path $tmp -Recurse -Filter 'ffmpeg.exe' | Select-Object -First 1
+          if (-not $ffExe) { Write-Error 'ffmpeg.exe not found in downloaded archive'; exit 1 }
+          Copy-Item $ffExe.FullName (Join-Path $distFolder 'ffmpeg.exe') -Force
 
       - name: Package onedir folder into zip
         shell: pwsh

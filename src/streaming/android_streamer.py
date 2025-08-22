@@ -19,7 +19,7 @@ import threading  # New: for monitoring FFmpeg stderr asynchronously
 import time
 import urllib.request
 import zipfile
-from typing import Any, Callable, IO, Optional, Tuple
+from typing import Any, Callable, IO, Optional, Tuple, List
 
 PROD: bool = True  # Set to True for production (PyInstaller app)
 
@@ -157,11 +157,47 @@ def get_ffmpeg_path() -> str:
     return ffmpeg_path
 
 
-# --- ADB static setup logic ---
-ADB_BIN = get_adb_path()
+def _find_bundled_tool(exe_win: str, exe_posix: str) -> Optional[str]:
+    """Find a tool next to the frozen executable or on PATH.
 
-# --- FFmpeg static setup logic ---
-FFMPEG_BIN = get_ffmpeg_path()
+    Returns absolute path if found, else None.
+    """
+    sys_os = platform.system().lower()
+    exe_name = exe_win if sys_os == "windows" else exe_posix
+
+    # Prefer alongside the PyInstaller onedir executable
+    try:
+        base_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else None
+    except Exception:
+        base_dir = None
+    candidates: List[str] = []
+    if base_dir:
+        candidates.append(os.path.join(base_dir, exe_name))
+    # PATH fallback
+    which = shutil.which(exe_name)
+    if which:
+        candidates.append(which)
+    for c in candidates:
+        if c and os.path.exists(c):
+            return c
+    return None
+
+# Resolve tool paths per-OS: avoid runtime downloads on Windows to reduce AV flags
+if platform.system().lower() == "windows":
+    ADB_BIN = _find_bundled_tool("adb.exe", "adb")
+    FFMPEG_BIN = _find_bundled_tool("ffmpeg.exe", "ffmpeg")
+    if not ADB_BIN:
+        print("❌ adb.exe not found. Please ensure it is bundled next to the EXE or installed on PATH.")
+        sys.exit(1)
+    if not FFMPEG_BIN:
+        print("❌ ffmpeg.exe not found. Please ensure it is bundled next to the EXE or installed on PATH.")
+        sys.exit(1)
+else:
+    # macOS/Linux: keep auto-install convenience
+    # --- ADB static setup logic ---
+    ADB_BIN = get_adb_path()
+    # --- FFmpeg static setup logic ---
+    FFMPEG_BIN = get_ffmpeg_path()
 
 # --- Ensure adb directory is on PATH for downstream tools like scrcpy ---------
 adb_dir_in_path = os.path.dirname(ADB_BIN)
@@ -187,31 +223,27 @@ def quote_arg(arg: str) -> str:
         return shlex.quote(arg)
 
 
-def get_audio_input_ffmpeg_args() -> str:
-    """Return FFmpeg input arguments to capture *system microphone* on host.
+def get_audio_input_ffmpeg_args() -> List[str]:
+    """Return FFmpeg input args (tokenized) to capture host microphone.
 
-    Returns an empty string if the platform is unsupported or the user does
-    not want audio. Currently supports:
+    Empty list if unsupported.
     - macOS:  avfoundation default audio (index 0)
-    - Windows: dshow default capture device via "virtual-audio-capturer"
-    - Linux: PulseAudio default source
+    - Windows: dshow default capture device via virtual-audio-capturer
+    - Linux:  PulseAudio default source
     """
     sys_os: str = platform.system().lower()
 
     if sys_os == "darwin":
-        # Use the default audio device; index 0 refers to the first audio input.
-        # Note: User can list devices with:
-        #   ffmpeg -f avfoundation -list_devices true -i ""
-        return "-f avfoundation -i \":0\""
+        # ffmpeg -f avfoundation -i ":0"
+        return ["-f", "avfoundation", "-i", ":0"]
     elif sys_os == "windows":
-        # Requires the virtual-audio-capturer device from the \n        # https://github.com/rdp/screen-capture-recorder-to-video-windows-free project.
-        # Users may need to install this device manually.
-        return "-f dshow -i audio=\"virtual-audio-capturer\""
+        # ffmpeg -f dshow -i audio=virtual-audio-capturer
+        return ["-f", "dshow", "-i", "audio=virtual-audio-capturer"]
     elif sys_os == "linux":
-        # PulseAudio default source (requires FFmpeg built with --enable-libpulse)
-        return "-f pulse -i default"
+        # ffmpeg -f pulse -i default
+        return ["-f", "pulse", "-i", "default"]
     else:
-        return ""  # Unsupported platform or cannot determine device
+        return []
 
 
 EVENT_LOG_FILE = "touch_events.log"  # The file where raw touch events will be saved
@@ -850,72 +882,90 @@ def main() -> None:
             # scrcpy records on-device encoded video *and* audio, muxed on host.
             # --no-playback disables live window; --no-control avoids input capture.
             # We keep --no-window to avoid spawning GUI windows in the packaged app.
-            video_command = (
-                f"{quote_arg(scrcpy_bin)} --no-playback --no-control --no-window "
-                f"--max-size={SCRCPY_MAX_SIZE} --max-fps={SCRCPY_MAX_FPS} "
-                f"--audio-codec=aac --record={quoted_output_file}"
-            )
+            video_args = [
+                scrcpy_bin,
+                "--no-playback", "--no-control", "--no-window",
+                f"--max-size={SCRCPY_MAX_SIZE}", f"--max-fps={SCRCPY_MAX_FPS}",
+                "--audio-codec=aac", f"--record={VIDEO_OUTPUT_FILE}",
+            ]
             if RECORD_TIME_LIMIT_SECONDS:
-                video_command += f" --time-limit={RECORD_TIME_LIMIT_SECONDS}"
+                video_args.append(f"--time-limit={RECORD_TIME_LIMIT_SECONDS}")
             print("🎥 Recording via scrcpy with internal device audio")
         else:
             # Fallback to adb screenrecord piped to FFmpeg plus optional host-audio capture.
-            audio_args = get_audio_input_ffmpeg_args()
-            if audio_args:
-                ffmpeg_base = (
-                    f"{quote_arg(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
-                    "-f h264 -i - "
-                    f"{audio_args} -shortest -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac"
-                )
-            else:
-                ffmpeg_base = (
-                    f"{quote_arg(FFMPEG_BIN)} -y -use_wallclock_as_timestamps 1 -fflags +genpts "
-                    "-f h264 -i - -c copy"
-                )
+            audio_args = get_audio_input_ffmpeg_args()  # List[str]
 
+            # Build ADB screenrecord command (writes raw H.264 to stdout)
+            adb_cmd: List[str] = [ADB_BIN, "shell", "screenrecord"]
             if screen_width and screen_height:
-                if RECORD_TIME_LIMIT_SECONDS:
-                    video_command = (
-                        f"{ADB_BIN} shell screenrecord --size {screen_width}x{screen_height} "
-                        f"--time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
-                    )
-                else:
-                    video_command = (
-                        f"{ADB_BIN} shell screenrecord --size {screen_width}x{screen_height} "
-                        f"--output-format=h264 - | {ffmpeg_base} {quoted_output_file}"
-                    )
+                adb_cmd += ["--size", f"{screen_width}x{screen_height}"]
                 print(f"🎥 Recording at {screen_width}x{screen_height} resolution")
             else:
-                if RECORD_TIME_LIMIT_SECONDS:
-                    video_command = (
-                        f"{ADB_BIN} shell screenrecord --time-limit {RECORD_TIME_LIMIT_SECONDS} --output-format=h264 - "
-                        f"| {ffmpeg_base} {quoted_output_file}"
-                    )
-                else:
-                    print("⚠️ Android 'screenrecord' may stop after a few minutes without a time limit. Install scrcpy for unlimited recording.")
-                    video_command = (
-                        f"{ADB_BIN} shell screenrecord --output-format=h264 - "
-                        f"| {ffmpeg_base} {quoted_output_file}"
-                    )
                 print("🎥 Recording at default resolution (fallback)")
+            if RECORD_TIME_LIMIT_SECONDS:
+                adb_cmd += ["--time-limit", str(RECORD_TIME_LIMIT_SECONDS)]
+            else:
+                print("⚠️ Android 'screenrecord' may stop after a few minutes without a time limit. Install scrcpy for unlimited recording.")
+            adb_cmd += ["--output-format=h264", "-"]
+
+            # Build FFmpeg command reading from stdin (pipe:0)
+            ffmpeg_args: List[str] = [
+                FFMPEG_BIN,
+                "-y",
+                "-use_wallclock_as_timestamps", "1",
+                "-fflags", "+genpts",
+                "-f", "h264", "-i", "pipe:0",
+            ]
+            if audio_args:
+                ffmpeg_args += audio_args + [
+                    "-shortest",
+                    "-map", "0:v:0",
+                    "-map", "1:a:0",
+                    "-c:v", "copy",
+                    "-c:a", "aac",
+                ]
+            else:
+                ffmpeg_args += ["-c", "copy"]
+            ffmpeg_args += [VIDEO_OUTPUT_FILE]
 
         # Prepare video error log
         video_log_file = open(VIDEO_ERROR_LOG_FILE, "a")
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        video_log_file.write(
-            f"\n[{timestamp}] Launching video command: {video_command}\n"
-        )
+        if use_scrcpy:
+            video_log_file.write(
+                f"\n[{timestamp}] Launching scrcpy: {' '.join(map(quote_arg, video_args))}\n"
+            )
+        else:
+            video_log_file.write(
+                f"\n[{timestamp}] Launching pipeline:\n  ADB: {' '.join(map(quote_arg, adb_cmd))}\n  FFmpeg: {' '.join(map(quote_arg, ffmpeg_args))}\n"
+            )
         video_log_file.flush()
 
         # Capture stream start time when video recording begins
         stream_start_time = time.time()
-        video_process = subprocess.Popen(
-            video_command,
-            shell=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-        )
-        processes.append(video_process)
+        if use_scrcpy:
+            video_process = subprocess.Popen(
+                video_args,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            processes.append(video_process)
+        else:
+            # Start ADB → FFmpeg pipeline programmatically (no shell/pipes)
+            adb_process = subprocess.Popen(
+                adb_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            ffmpeg_process = subprocess.Popen(
+                ffmpeg_args,
+                stdin=adb_process.stdout,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            # Ensure FFmpeg is the tracked video_process for stderr monitoring
+            video_process = ffmpeg_process
+            processes.extend([adb_process, ffmpeg_process])
         print(f"🔴 REC: Video recording started at {stream_start_time:.6f}")
         print(f"🔴 REC: Video is being recorded to '{VIDEO_OUTPUT_FILE}'")
         print(
