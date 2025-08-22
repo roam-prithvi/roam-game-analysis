@@ -64,10 +64,25 @@ jobs:
           if (-not (Test-Path $adb)) { Write-Error 'adb.exe not found for bundling'; exit 1 }
           if (-not (Test-Path $ffm)) { Write-Error 'ffmpeg.exe not found for bundling'; exit 1 }
 
-          .\.venv\Scripts\pyinstaller --onefile --noupx --console --name Game_Data_Collector_V1 `
-            --add-binary "${adb};." `
-            --add-binary "${ffm};." `
-            src/streaming/android_streamer.py
+          $args = @('--onefile','--noupx','--console','--name','Game_Data_Collector_V1')
+          # Always add the exe binaries to the extraction folder (.)
+          $args += @('--add-binary', "$adb;.", '--add-binary', "$ffm;.")
+
+          # Add dependent ADB DLLs if present
+          $adbDir = Split-Path -Path $adb -Parent
+          $adbApi = Join-Path $adbDir 'AdbWinApi.dll'
+          $adbUsb = Join-Path $adbDir 'AdbWinUsbApi.dll'
+          if (Test-Path $adbApi) { $args += @('--add-binary', "$adbApi;.") }
+          if (Test-Path $adbUsb) { $args += @('--add-binary', "$adbUsb;.") }
+
+          # Add all FFmpeg DLLs next to ffmpeg.exe (covers shared builds)
+          $ffDir = Split-Path -Path $ffm -Parent
+          Get-ChildItem -Path $ffDir -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
+            $args += @('--add-binary', ("$($_.FullName);."))
+          }
+
+          $args += 'src/streaming/android_streamer.py'
+          & .\.venv\Scripts\pyinstaller @args
 
       - name: Upload Windows onefile artifact
         uses: actions/upload-artifact@v4
