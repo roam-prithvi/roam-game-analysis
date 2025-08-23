@@ -34,7 +34,7 @@ FFMPEG_BIN: str = "ffmpeg"  # Will be set to full path after setup
 RECORD_TIME_LIMIT_SECONDS: Optional[int] = None
 
 # scrcpy quality settings (lower = less CPU/network)
-SCRCPY_MAX_SIZE: int = 720  # 0 = original; typical: 720 for ~720p
+SCRCPY_MAX_SIZE: int = 1080  # 0 = original; default 1080p
 SCRCPY_MAX_FPS: int = 30   # 0 = device default; 15–30 reduces load
 
 
@@ -449,6 +449,60 @@ def get_screen_size() -> Tuple[Optional[int], Optional[int]]:
     return None, None
 
 
+def _round_to_multiple(value: int, base: int = 16) -> int:
+    """Round *value* to the nearest lower multiple of *base* (>= base)."""
+    if value < base:
+        return base
+    return value - (value % base)
+
+
+def pick_recording_max_size(default_max: int = 1080) -> int:
+    """Prompt the collector for desired recording size (longest side).
+
+    Returns an integer like 720, 1080, 1440, or 0 for original device size.
+    """
+    print("")
+    print("📺 Default recording resolution is 1080p (longest side).")
+    print("   You can change it now if needed.")
+    print("   Enter one of: 0 (original), 720, 1080, 1440, or a custom integer.")
+    resp = input(f"➡️  Enter desired max size [press Enter for {default_max}]: ").strip()
+    if not resp:
+        return default_max
+    try:
+        val = int(resp)
+        if val < 0:
+            raise ValueError
+        return val
+    except ValueError:
+        print("⚠️ Invalid input; using default 1080p.")
+        return default_max
+
+
+def compute_scaled_size(
+    orig_w: Optional[int], orig_h: Optional[int], max_side: int
+) -> Tuple[Optional[int], Optional[int]]:
+    """Compute WxH scaled so that the longest side equals *max_side*.
+
+    Returns multiples of 16 for codec compatibility. If inputs are missing,
+    returns (None, None) to use device defaults.
+    """
+    if not orig_w or not orig_h or max_side <= 0:
+        return None, None
+    longest = max(orig_w, orig_h)
+    if longest == 0:
+        return None, None
+    if longest == max_side:
+        w, h = orig_w, orig_h
+    else:
+        scale = max_side / float(longest)
+        w = int(round(orig_w * scale))
+        h = int(round(orig_h * scale))
+    # Round down to multiples of 16
+    w = _round_to_multiple(w, 16)
+    h = _round_to_multiple(h, 16)
+    return max(w, 16), max(h, 16)
+
+
 def get_input_device_ranges(
     device_path: str,
 ) -> Tuple[Optional[int], Optional[int], Optional[int], Optional[int]]:
@@ -841,6 +895,10 @@ def main() -> None:
     touch_device = find_touchscreen_device()
     screen_width, screen_height = get_screen_size()
 
+    # 🆕 Ask collector for preferred recording max size (longest side)
+    user_max_side = pick_recording_max_size(default_max=SCRCPY_MAX_SIZE)
+    print(f"✅ Using max size: {user_max_side if user_max_side else 'original (no downscale)'}")
+
     # 2. Get coordinate ranges for translation
     x_min, x_max, y_min, y_max = get_input_device_ranges(touch_device)
     coordinate_translator = create_coordinate_translator(
@@ -892,7 +950,7 @@ def main() -> None:
             video_args = [
                 scrcpy_bin,
                 "--no-playback", "--no-control", "--no-window",
-                f"--max-size={SCRCPY_MAX_SIZE}", f"--max-fps={SCRCPY_MAX_FPS}",
+                f"--max-size={user_max_side}", f"--max-fps={SCRCPY_MAX_FPS}",
                 "--audio-codec=aac", f"--record={VIDEO_OUTPUT_FILE}",
             ]
             if RECORD_TIME_LIMIT_SECONDS:
@@ -904,11 +962,20 @@ def main() -> None:
 
             # Build ADB screenrecord command (writes raw H.264 to stdout)
             adb_cmd: List[str] = [ADB_BIN, "shell", "screenrecord"]
-            if screen_width and screen_height:
+            # Apply scaling if user requested a cap (>0); else use device default/original
+            if user_max_side and user_max_side > 0 and screen_width and screen_height:
+                scaled_w, scaled_h = compute_scaled_size(screen_width, screen_height, user_max_side)
+                if scaled_w and scaled_h:
+                    adb_cmd += ["--size", f"{scaled_w}x{scaled_h}"]
+                    print(f"🎥 Recording (scaled) at {scaled_w}x{scaled_h} (max-side {user_max_side})")
+                else:
+                    print("🎥 Recording at device default resolution (could not compute scale)")
+            elif screen_width and screen_height:
+                # Use the device physical resolution when available (original)
                 adb_cmd += ["--size", f"{screen_width}x{screen_height}"]
-                print(f"🎥 Recording at {screen_width}x{screen_height} resolution")
+                print(f"🎥 Recording at {screen_width}x{screen_height} resolution (original)")
             else:
-                print("🎥 Recording at default resolution (fallback)")
+                print("🎥 Recording at device default resolution (fallback)")
             if RECORD_TIME_LIMIT_SECONDS:
                 adb_cmd += ["--time-limit", str(RECORD_TIME_LIMIT_SECONDS)]
             else:
