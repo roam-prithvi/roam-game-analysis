@@ -66,27 +66,27 @@ jobs:
           ADB_PATH=$(find "${TOOLS_DIR}" -name adb -type f -print -quit)
           FFMPEG_PATH=$(find "${TOOLS_DIR}" -maxdepth 1 -name ffmpeg -type f -print -quit)
           if [ -z "${ADB_PATH:-}" ] || [ -z "${FFMPEG_PATH:-}" ]; then echo "Missing tools for bundling"; exit 1; fi
-          # Ensure previous app dir does not cause overwrite errors on retries
-          rm -rf dist/Game_Data_Collector_V1.app || true
-          pyinstaller --clean --noconfirm --windowed --name Game_Data_Collector_V1 \
+          # Ensure previous outputs do not cause overwrite errors on retries
+          rm -rf dist/Game_Data_Collector_V1 dist/Game_Data_Collector_V1.app || true
+          pyinstaller --clean --noconfirm --onefile --console --name Game_Data_Collector_V1 \
             --add-binary "${ADB_PATH}:." \
             --add-binary "${FFMPEG_PATH}:." \
             src/streaming/android_streamer.py
 
-      - name: Normalize artifact path
+      - name: Package macOS executable artifact
         run: |
           mkdir -p dist/mac
-          if [ -d dist/Game_Data_Collector_V1.app ]; then
-            mv -f dist/Game_Data_Collector_V1.app dist/mac/Game_Data_Collector_V1.app
+          if [ -f dist/Game_Data_Collector_V1 ]; then
+            mv -f dist/Game_Data_Collector_V1 dist/mac/Game_Data_Collector_V1
           else
-            echo 'macOS .app bundle not found in dist/'; exit 1
+            echo 'macOS executable not found in dist/'; exit 1
           fi
-          # Zip the .app for easy download
-          ditto -c -k --sequesterRsrc --keepParent dist/mac/Game_Data_Collector_V1.app dist/mac/Game_Data_Collector_V1.app.zip
+          # Zip the executable for easy download and to preserve permissions
+          ditto -c -k --sequesterRsrc --keepParent dist/mac/Game_Data_Collector_V1 dist/mac/Game_Data_Collector_V1.zip
 
       - name: Upload macOS binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: Game_Data_Collector_macOS
-          path: dist/mac/Game_Data_Collector_V1.app.zip
+          path: dist/mac/Game_Data_Collector_V1.zip
           if-no-files-found: error
