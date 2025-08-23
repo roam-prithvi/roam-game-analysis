@@ -66,7 +66,9 @@ jobs:
           ADB_PATH=$(find "${TOOLS_DIR}" -name adb -type f -print -quit)
           FFMPEG_PATH=$(find "${TOOLS_DIR}" -maxdepth 1 -name ffmpeg -type f -print -quit)
           if [ -z "${ADB_PATH:-}" ] || [ -z "${FFMPEG_PATH:-}" ]; then echo "Missing tools for bundling"; exit 1; fi
-          pyinstaller --windowed --name Game_Data_Collector_V1 \
+          # Ensure previous app dir does not cause overwrite errors on retries
+          rm -rf dist/Game_Data_Collector_V1.app || true
+          pyinstaller --clean --noconfirm --windowed --name Game_Data_Collector_V1 \
             --add-binary "${ADB_PATH}:." \
             --add-binary "${FFMPEG_PATH}:." \
             src/streaming/android_streamer.py
