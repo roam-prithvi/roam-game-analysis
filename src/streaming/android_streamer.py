@@ -189,8 +189,10 @@ def _find_bundled_tool(exe_win: str, exe_posix: str) -> Optional[str]:
             return c
     return None
 
-# Resolve tool paths per-OS: avoid runtime downloads on Windows to reduce AV flags
-if platform.system().lower() == "windows":
+# Resolve tool paths per-OS: prefer bundled when available
+sys_os_lower = platform.system().lower()
+if sys_os_lower == "windows":
+    # Windows: require bundled or PATH (no runtime downloads to avoid AV flags)
     ADB_BIN = _find_bundled_tool("adb.exe", "adb")
     FFMPEG_BIN = _find_bundled_tool("ffmpeg.exe", "ffmpeg")
     if not ADB_BIN:
@@ -200,11 +202,13 @@ if platform.system().lower() == "windows":
         print("❌ ffmpeg.exe not found. Please ensure it is bundled next to the EXE or installed on PATH.")
         sys.exit(1)
 else:
-    # macOS/Linux: keep auto-install convenience
-    # --- ADB static setup logic ---
-    ADB_BIN = get_adb_path()
-    # --- FFmpeg static setup logic ---
-    FFMPEG_BIN = get_ffmpeg_path()
+    # macOS/Linux: prefer bundled (sys._MEIPASS or app dir); fallback to convenience auto-install
+    ADB_BIN = _find_bundled_tool("adb.exe", "adb")
+    FFMPEG_BIN = _find_bundled_tool("ffmpeg.exe", "ffmpeg")
+    if not ADB_BIN:
+        ADB_BIN = get_adb_path()
+    if not FFMPEG_BIN:
+        FFMPEG_BIN = get_ffmpeg_path()
 
 # --- Ensure adb directory is on PATH for downstream tools like scrcpy ---------
 adb_dir_in_path = os.path.dirname(ADB_BIN)

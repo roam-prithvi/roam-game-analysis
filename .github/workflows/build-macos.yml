@@ -35,10 +35,41 @@ jobs:
           # Remove pathlib backport because it conflicts with PyInstaller
           python -m pip uninstall -y pathlib || true
 
+      - name: Download adb and ffmpeg for bundling (macOS)
+        run: |
+          set -euo pipefail
+          TOOLS_DIR="${RUNNER_TEMP}/roam_tools"
+          mkdir -p "${TOOLS_DIR}"
+
+          # Download Android platform-tools (adb)
+          curl -L "https://dl.google.com/android/repository/platform-tools-latest-darwin.zip" -o "${TOOLS_DIR}/platform-tools.zip"
+          unzip -q -o "${TOOLS_DIR}/platform-tools.zip" -d "${TOOLS_DIR}"
+          ADB_PATH=$(find "${TOOLS_DIR}" -name adb -type f -perm +111 -print -quit)
+          if [ -z "${ADB_PATH:-}" ]; then
+            # If perm +111 doesn't match due to zip flags, try generic find then chmod
+            ADB_PATH=$(find "${TOOLS_DIR}" -name adb -type f -print -quit)
+            [ -n "${ADB_PATH:-}" ] && chmod +x "${ADB_PATH}"
+          fi
+          if [ -z "${ADB_PATH:-}" ]; then echo "adb not found in platform-tools"; exit 1; fi
+
+          # Download ffmpeg universal zip for macOS
+          curl -L "https://evermeet.cx/ffmpeg/getrelease/zip" -o "${TOOLS_DIR}/ffmpeg.zip"
+          unzip -q -o "${TOOLS_DIR}/ffmpeg.zip" -d "${TOOLS_DIR}"
+          FFMPEG_PATH=$(find "${TOOLS_DIR}" -maxdepth 1 -name ffmpeg -type f -print -quit)
+          if [ -z "${FFMPEG_PATH:-}" ]; then echo "ffmpeg not found"; exit 1; fi
+          chmod +x "${FFMPEG_PATH}"
+
       - name: Build macOS executable with PyInstaller
         run: |
           source .venv/bin/activate
-          pyinstaller --windowed --name Game_Data_Collector_V1 src/streaming/android_streamer.py
+          TOOLS_DIR="${RUNNER_TEMP}/roam_tools"
+          ADB_PATH=$(find "${TOOLS_DIR}" -name adb -type f -print -quit)
+          FFMPEG_PATH=$(find "${TOOLS_DIR}" -maxdepth 1 -name ffmpeg -type f -print -quit)
+          if [ -z "${ADB_PATH:-}" ] || [ -z "${FFMPEG_PATH:-}" ]; then echo "Missing tools for bundling"; exit 1; fi
+          pyinstaller --windowed --name Game_Data_Collector_V1 \
+            --add-binary "${ADB_PATH}:." \
+            --add-binary "${FFMPEG_PATH}:." \
+            src/streaming/android_streamer.py
 
       - name: Normalize artifact path
         run: |
