@@ -34,7 +34,7 @@ FFMPEG_BIN: str = "ffmpeg"  # Will be set to full path after setup
 RECORD_TIME_LIMIT_SECONDS: Optional[int] = None
 
 # scrcpy quality settings (lower = less CPU/network)
-SCRCPY_MAX_SIZE: int = 1080  # 0 = original; default 1080p
+SCRCPY_MAX_SIZE: int = 0  # 0 = original; default native resolution
 SCRCPY_MAX_FPS: int = 30   # 0 = device default; 15–30 reduces load
 
 
@@ -466,7 +466,8 @@ def pick_recording_max_size(default_max: int = 1080) -> int:
     Returns an integer like 720, 1080, 1440, or 0 for original device size.
     """
     print("")
-    print("📺 Default recording resolution is 1080p (longest side).")
+    default_label = "original (no downscale)" if default_max == 0 else f"{default_max}p (longest side)"
+    print(f"📺 Default recording resolution is {default_label}.")
     print("   You can change it now if needed.")
     print("   Enter one of: 0 (original), 720, 1080, 1440, or a custom integer.")
     resp = input(f"➡️  Enter desired max size [press Enter for {default_max}]: ").strip()
@@ -478,7 +479,7 @@ def pick_recording_max_size(default_max: int = 1080) -> int:
             raise ValueError
         return val
     except ValueError:
-        print("⚠️ Invalid input; using default 1080p.")
+        print("⚠️ Invalid input; using default setting.")
         return default_max
 
 
@@ -973,11 +974,9 @@ def main() -> None:
                     adb_cmd += ["--size", f"{scaled_w}x{scaled_h}"]
                     print(f"🎥 Recording (scaled) at {scaled_w}x{scaled_h} (max-side {user_max_side})")
                 else:
-                    print("🎥 Recording at device default resolution (could not compute scale)")
-            elif screen_width and screen_height:
-                # Use the device physical resolution when available (original)
-                adb_cmd += ["--size", f"{screen_width}x{screen_height}"]
-                print(f"🎥 Recording at {screen_width}x{screen_height} resolution (original)")
+                    print("🎥 Recording at device native resolution (could not compute scale)")
+            elif user_max_side == 0:
+                print("🎥 Recording at device native resolution (original)")
             else:
                 print("🎥 Recording at device default resolution (fallback)")
             if RECORD_TIME_LIMIT_SECONDS:
